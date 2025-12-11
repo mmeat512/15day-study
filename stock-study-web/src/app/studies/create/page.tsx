@@ -19,6 +19,7 @@ export default function CreateStudyPage() {
     description: "",
     bookTitle: "",
     startDate: "",
+    endDate: "",
     maxMembers: 10,
   });
 
@@ -47,6 +48,7 @@ export default function CreateStudyPage() {
           description: formData.description || undefined,
           bookTitle: formData.bookTitle,
           startDate: new Date(formData.startDate),
+          endDate: new Date(formData.endDate),
           maxMembers: Number(formData.maxMembers),
         },
         user.uid
@@ -133,19 +135,33 @@ export default function CreateStudyPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Max Members
+                    End Date
                   </label>
                   <Input
-                    name="maxMembers"
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={formData.maxMembers}
+                    name="endDate"
+                    type="date"
+                    value={formData.endDate}
                     onChange={handleChange}
                     required
                     className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  Max Members
+                </label>
+                <Input
+                  name="maxMembers"
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={formData.maxMembers}
+                  onChange={handleChange}
+                  required
+                  className="dark:bg-gray-700 dark:text-white"
+                />
               </div>
             </div>
 

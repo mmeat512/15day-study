@@ -34,14 +34,13 @@ export async function createStudy(
     description?: string;
     bookTitle: string;
     startDate: Date;
+    endDate: Date;
     maxMembers: number;
   },
   ownerId: string
 ): Promise<{ studyId: string; inviteCode: string }> {
   try {
     const inviteCode = generateInviteCode();
-    const endDate = new Date(studyData.startDate);
-    endDate.setDate(endDate.getDate() + 14); // 15일 (시작일 + 14일)
 
     // Create study document
     const studyRef = doc(collection(db, "studies"));
@@ -49,11 +48,11 @@ export async function createStudy(
 
     const study: Omit<Study, "studyId"> = {
       studyName: studyData.studyName,
-      description: studyData.description,
+      description: studyData.description || "", // Prevent undefined value
       bookTitle: studyData.bookTitle,
       inviteCode: inviteCode,
       startDate: Timestamp.fromDate(studyData.startDate) as any,
-      endDate: Timestamp.fromDate(endDate) as any,
+      endDate: Timestamp.fromDate(studyData.endDate) as any,
       ownerId: ownerId,
       status: "active",
       maxMembers: studyData.maxMembers,
@@ -544,16 +543,23 @@ export async function getUserStudiesWithProgress(
     );
     const memberSnapshot = await getDocs(q);
 
-    const studiesWithProgress = [];
+    // Parallelize all study and member count queries
+    const studiesWithProgress = await Promise.all(
+      memberSnapshot.docs.map(async (memberDoc) => {
+        const memberData = memberDoc.data();
 
-    for (const memberDoc of memberSnapshot.docs) {
-      const memberData = memberDoc.data();
+        // Get study and member count in parallel
+        const [studyDoc, allMembersSnapshot] = await Promise.all([
+          getDoc(doc(db, "studies", memberData.studyId)),
+          getDocs(
+            query(membersRef, where("studyId", "==", memberData.studyId))
+          ),
+        ]);
 
-      // Get study
-      const studyRef = doc(db, "studies", memberData.studyId);
-      const studyDoc = await getDoc(studyRef);
+        if (!studyDoc.exists()) {
+          return null;
+        }
 
-      if (studyDoc.exists()) {
         const studyData = studyDoc.data();
         const study: Study = {
           studyId: studyDoc.id,
@@ -570,17 +576,10 @@ export async function getUserStudiesWithProgress(
           updatedAt: studyData.updatedAt?.toDate() || new Date(),
         };
 
-        // Get member count
-        const allMembersQuery = query(
-          membersRef,
-          where("studyId", "==", memberData.studyId)
-        );
-        const allMembersSnapshot = await getDocs(allMembersQuery);
-
         // Calculate current day
         const currentDay = getCurrentDayNumber(study.startDate);
 
-        studiesWithProgress.push({
+        return {
           study,
           memberInfo: {
             memberId: memberDoc.id,
@@ -593,11 +592,17 @@ export async function getUserStudiesWithProgress(
           },
           currentDay,
           memberCount: allMembersSnapshot.size,
-        });
-      }
-    }
+        };
+      })
+    );
 
-    return studiesWithProgress;
+    // Filter out null results
+    return studiesWithProgress.filter((item) => item !== null) as Array<{
+      study: Study;
+      memberInfo: StudyMember;
+      currentDay: number;
+      memberCount: number;
+    }>;
   } catch (error) {
     console.error("Error getting user studies with progress:", error);
     throw error;

@@ -1,0 +1,37 @@
+[debug] [2025-12-11T11:09:36.150Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.152Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.153Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.193Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T11:09:36.195Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:06:16.842Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:06:16.844Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:06:22.766Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:06:22.767Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:06:22.770Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2025-12-11T13:06:22.770Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"d21dfc88-13e0-4d0e-9f4c-454a2083eebc"}
+[debug] [2025-12-11T13:06:23.986Z] <<< [apiv2][status] POST https://auth.firebase.tools/attest 200
+[debug] [2025-12-11T13:06:23.987Z] <<< [apiv2][body] POST https://auth.firebase.tools/attest {"token":"wab-C8n30ncgUpKgTVwI65Q4SaxT0cWeUYlXKqUmmcg"}
+[debug] [2025-12-11T13:07:57.718Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:07:57.719Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:07:57.722Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2025-12-11T13:07:57.722Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2025-12-11T13:07:57.958Z] <<< [apiv2][status] POST https://accounts.google.com/o/oauth2/token 200
+[debug] [2025-12-11T13:07:57.958Z] <<< [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2025-12-11T13:08:04.586Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:08:04.586Z] > authorizing via signed-in user (mmeat170512@gmail.com)
+[debug] [2025-12-11T13:08:04.587Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T13:08:04.587Z] > authorizing via signed-in user (mmeat170512@gmail.com)
+[debug] [2025-12-11T13:08:04.598Z] Checked if tokens are valid: true, expires at: 1765462076958
+[debug] [2025-12-11T13:08:04.598Z] Checked if tokens are valid: true, expires at: 1765462076958
+[debug] [2025-12-11T13:08:04.598Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/stock-study-15/services/cloudresourcemanager.googleapis.com [none]
+[debug] [2025-12-11T13:08:04.598Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/stock-study-15/services/cloudresourcemanager.googleapis.com x-goog-quota-user=projects/stock-study-15
+[debug] [2025-12-11T13:08:06.245Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/stock-study-15/services/cloudresourcemanager.googleapis.com 200
+[debug] [2025-12-11T13:08:06.245Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/stock-study-15/services/cloudresourcemanager.googleapis.com [omitted]
+[debug] [2025-12-11T13:08:06.255Z] Checked if tokens are valid: true, expires at: 1765462076958
+[debug] [2025-12-11T13:08:06.255Z] Checked if tokens are valid: true, expires at: 1765462076958
+[debug] [2025-12-11T13:08:06.255Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/stock-study-15 [none]
+[debug] [2025-12-11T13:08:06.753Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/stock-study-15 200
+[debug] [2025-12-11T13:08:06.753Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/stock-study-15 {"projectNumber":"281898542016","projectId":"stock-study-15","lifecycleState":"ACTIVE","name":"stock-study-15","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-12-08T13:15:22.455175Z"}
+[info] Now using project stock-study-15

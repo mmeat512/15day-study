@@ -56,3 +56,4 @@ node_modules/
 # Playwright screenshots and test files
 /screenshots/
 test-flows.mjs
+.env*.local
