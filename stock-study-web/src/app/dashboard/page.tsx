@@ -27,13 +27,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadDashboardData() {
-      if (!user?.uid) return;
+      if (!user?.uid) {
+        console.warn("⚠️ No user UID found");
+        return;
+      }
 
       try {
         setLoading(true);
+        console.log("🚀 Loading dashboard data for user:", user.uid);
 
         // Get user's studies with progress
         const studies = await getUserStudiesWithProgress(user.uid);
+        console.log("📊 Dashboard received studies:", studies);
 
         if (studies.length > 0) {
           // Get the first active study as primary

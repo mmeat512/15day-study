@@ -535,6 +535,7 @@ export async function getUserStudiesWithProgress(
   }>
 > {
   try {
+    console.log("🔍 getUserStudiesWithProgress called with userId:", userId);
     const membersRef = collection(db, "studyMembers");
     const q = query(
       membersRef,
@@ -542,11 +543,18 @@ export async function getUserStudiesWithProgress(
       where("isActive", "==", true)
     );
     const memberSnapshot = await getDocs(q);
+    console.log("📊 Found studyMembers:", memberSnapshot.size);
+
+    if (memberSnapshot.empty) {
+      console.warn("⚠️ No studyMembers found for user:", userId);
+      return [];
+    }
 
     // Parallelize all study and member count queries
     const studiesWithProgress = await Promise.all(
       memberSnapshot.docs.map(async (memberDoc) => {
         const memberData = memberDoc.data();
+        console.log("📝 Processing member:", memberDoc.id, memberData);
 
         // Get study and member count in parallel
         const [studyDoc, allMembersSnapshot] = await Promise.all([
@@ -557,10 +565,12 @@ export async function getUserStudiesWithProgress(
         ]);
 
         if (!studyDoc.exists()) {
+          console.warn("⚠️ Study not found:", memberData.studyId);
           return null;
         }
 
         const studyData = studyDoc.data();
+        console.log("📚 Study data:", studyDoc.id, studyData);
         const study: Study = {
           studyId: studyDoc.id,
           studyName: studyData.studyName,
@@ -597,14 +607,16 @@ export async function getUserStudiesWithProgress(
     );
 
     // Filter out null results
-    return studiesWithProgress.filter((item) => item !== null) as Array<{
+    const filteredStudies = studiesWithProgress.filter((item) => item !== null) as Array<{
       study: Study;
       memberInfo: StudyMember;
       currentDay: number;
       memberCount: number;
     }>;
+    console.log("✅ Returning studies:", filteredStudies.length, filteredStudies);
+    return filteredStudies;
   } catch (error) {
-    console.error("Error getting user studies with progress:", error);
+    console.error("❌ Error getting user studies with progress:", error);
     throw error;
   }
 }

@@ -35,3 +35,7 @@
 [debug] [2025-12-11T13:08:06.753Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/stock-study-15 200
 [debug] [2025-12-11T13:08:06.753Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/stock-study-15 {"projectNumber":"281898542016","projectId":"stock-study-15","lifecycleState":"ACTIVE","name":"stock-study-15","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-12-08T13:15:22.455175Z"}
 [info] Now using project stock-study-15
+[debug] [2025-12-11T23:09:52.585Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T23:09:52.585Z] > authorizing via signed-in user (mmeat170512@gmail.com)
+[debug] [2025-12-11T23:09:52.697Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-11T23:09:52.697Z] > authorizing via signed-in user (mmeat170512@gmail.com)
