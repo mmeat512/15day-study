@@ -262,8 +262,19 @@ src/
 | 스터디 참여 | `http://localhost:3090/studies/join` | 초대 코드로 참여 |
 | 마이페이지 | `http://localhost:3090/mypage` | 내 정보 및 통계 |
 
+## 배포
+
+이 프로젝트는 Vercel에 배포됩니다:
+- Production URL: https://stock-study-web.vercel.app
+- GitHub repository에 push하면 자동으로 배포됩니다
+
 ## 최근 업데이트
 
+- Vercel 자동 배포 설정 완료
+- Playwright E2E 테스트 추가 및 모든 테스트 통과
+- 로그인 로딩 표시 및 리다이렉트 개선
+- 스터디 생성 시 undefined 오류 수정
+- 대시보드 로드 속도 최적화 (Promise.all 활용)
 - Firestore persistent local cache 적용으로 오프라인 지원 개선
 - 이메일 또는 사용자명으로 로그인 가능
 - 사용자명 기반 회원가입 시 중복 체크 기능 추가
