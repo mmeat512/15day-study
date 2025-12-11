@@ -1,0 +1,17 @@
+{
+  "name": "StockStudy - 15일 주식 공부 트래커",
+  "short_name": "StockStudy",
+  "description": "15일 동안 체계적으로 주식 투자를 학습하는 스터디 트래킹 플랫폼",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#048CFC",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bookGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#048CFC"/>
+      <stop offset="100%" style="stop-color:#0066FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Simplified book icon for favicon -->
+  <g transform="translate(9, 8)">
+    <!-- Left page -->
+    <path d="M 0 0 L 13 0 L 13 30 L 2 30 Q 0 30 0 28 Z" fill="#048CFC"/>
+    <!-- Right page -->
+    <path d="M 17 0 L 30 0 Q 32 0 32 2 L 32 28 Q 32 30 30 30 L 17 30 Z" fill="#0066FF"/>
+    <!-- Spine -->
+    <rect x="13" y="0" width="4" height="30" fill="#0052CC"/>
+
+    <!-- Green bookmark -->
+    <path d="M 15 0 L 15 10 L 17 8 L 19 10 L 19 0 Z" fill="#10B981"/>
+
+    <!-- Simple face -->
+    <circle cx="7" cy="12" r="1.5" fill="#FFF"/>
+    <circle cx="12" cy="12" r="1.5" fill="#FFF"/>
+    <path d="M 6 17 Q 9.5 19 13 17" stroke="#FFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

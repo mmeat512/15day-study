@@ -1,0 +1,89 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern gradient background with fintech colors -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E6F2FF;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#E6FAF5;stop-opacity:0.5" />
+    </linearGradient>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#048CFC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0066FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Soft modern background -->
+  <ellipse cx="100" cy="105" rx="85" ry="80" fill="url(#bgGradient)"/>
+
+  <!-- Modern book with fintech blue gradient -->
+  <g transform="translate(60, 70)">
+    <!-- Book shadow -->
+    <rect x="3" y="62" width="74" height="5" rx="2" fill="#000" opacity="0.08"/>
+
+    <!-- Left page -->
+    <path d="M 5 5 Q 5 0 10 0 L 35 0 L 35 60 L 10 60 Q 5 60 5 55 Z" fill="#048CFC" />
+    <!-- Right page -->
+    <path d="M 40 0 L 65 0 Q 70 0 70 5 L 70 55 Q 70 60 65 60 L 40 60 Z" fill="#0066FF"/>
+    <!-- Spine -->
+    <rect x="35" y="0" width="5" height="60" fill="#0052CC"/>
+
+    <!-- Minimalist face -->
+    <circle cx="20" cy="25" r="2" fill="#FFFFFF"/>
+    <circle cx="30" cy="25" r="2" fill="#FFFFFF"/>
+    <path d="M 17 33 Q 25 37 33 33" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- Modern bookmark accent with green (growth) -->
+    <path d="M 37.5 0 L 37.5 20 L 40 16 L 42.5 20 L 42.5 0 Z" fill="#10B981"/>
+
+    <!-- Subtle page lines -->
+    <line x1="12" y1="15" x2="28" y2="15" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+    <line x1="12" y1="45" x2="28" y2="45" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+    <line x1="47" y1="15" x2="63" y2="15" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+    <line x1="47" y1="45" x2="63" y2="45" stroke="#FFFFFF" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Modern minimal decorative elements with fintech colors -->
+  <g>
+    <circle cx="35" cy="55" r="4" fill="#10B981" opacity="0.6"/>
+    <circle cx="165" cy="50" r="5" fill="#048CFC" opacity="0.5"/>
+    <circle cx="172" cy="145" r="4" fill="#0066FF" opacity="0.5"/>
+    <circle cx="25" cy="145" r="5" fill="#059669" opacity="0.6"/>
+  </g>
+
+  <!-- Modern sparkles - more geometric -->
+  <g stroke="#048CFC" stroke-width="2" stroke-linecap="round" opacity="0.4">
+    <line x1="45" y1="115" x2="45" y2="123"/>
+    <line x1="41" y1="119" x2="49" y2="119"/>
+
+    <line x1="155" y1="75" x2="155" y2="83"/>
+    <line x1="151" y1="79" x2="159" y2="79"/>
+  </g>
+
+  <!-- Progress indicators with growth green -->
+  <g transform="translate(15, 25)">
+    <circle cx="5" cy="5" r="4" fill="#10B981" opacity="1"/>
+    <circle cx="23" cy="5" r="4" fill="#10B981" opacity="1"/>
+    <circle cx="41" cy="5" r="4" fill="#10B981" opacity="1"/>
+    <circle cx="59" cy="5" r="4" fill="#10B981" opacity="0.9"/>
+    <circle cx="77" cy="5" r="4" fill="#10B981" opacity="0.9"/>
+    <circle cx="95" cy="5" r="4" fill="#10B981" opacity="0.7"/>
+    <circle cx="113" cy="5" r="4" fill="#10B981" opacity="0.7"/>
+    <circle cx="131" cy="5" r="4" fill="#10B981" opacity="0.5"/>
+    <circle cx="149" cy="5" r="4" fill="#10B981" opacity="0.5"/>
+    <circle cx="167" cy="5" r="4" fill="#10B981" opacity="0.3"/>
+  </g>
+
+  <!-- Modern people icons (flat design) -->
+  <g transform="translate(125, 145)">
+    <!-- Person 1 - teal -->
+    <circle cx="0" cy="0" r="7" fill="#14B8A6"/>
+    <ellipse cx="0" cy="11" rx="9" ry="7" fill="#14B8A6" opacity="0.8"/>
+
+    <!-- Person 2 - orange -->
+    <circle cx="22" cy="-4" r="7" fill="#F59E0B"/>
+    <ellipse cx="22" cy="7" rx="9" ry="7" fill="#F59E0B" opacity="0.8"/>
+
+    <!-- Person 3 - blue -->
+    <circle cx="22" cy="12" r="7" fill="#0066FF"/>
+    <ellipse cx="22" cy="23" rx="9" ry="7" fill="#0066FF" opacity="0.8"/>
+  </g>
+</svg>
