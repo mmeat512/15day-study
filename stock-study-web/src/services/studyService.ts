@@ -12,7 +12,7 @@ import {
   writeBatch,
   WriteBatch,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { Study, StudyMember, DayPlan, Assignment } from "@/types/study";
 
 /**
@@ -82,6 +82,12 @@ export async function createStudy(
     create15DayPlans(batch, studyId, studyData.bookTitle);
 
     console.log("DEBUG: Created batch operations. Starting commit...");
+    
+    // Debug Connection Info
+    console.log("DEBUG: Firebase Config ProjectId:", auth.app.options.projectId);
+    console.log("DEBUG: Current User UID:", auth.currentUser?.uid);
+    console.log("DEBUG: Database Instance:", db.app.options.projectId);
+
     // Commit all changes in a single transaction
     await batch.commit();
     console.log("DEBUG: Batch commit successful!");
