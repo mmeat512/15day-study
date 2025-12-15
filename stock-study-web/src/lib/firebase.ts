@@ -23,6 +23,7 @@ import {
 
 const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
+  experimentalForceLongPolling: true,
 });
 
 // Validate config
