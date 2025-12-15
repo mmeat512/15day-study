@@ -18,14 +18,12 @@ const auth = getAuth(app);
 // Initialize Firestore with settings
 import {
   initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
+  initializeFirestore,
+  memoryLocalCache,
 } from "firebase/firestore";
 
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
+  localCache: memoryLocalCache(),
 });
 
 // Validate config
