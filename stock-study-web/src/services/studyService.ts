@@ -9,6 +9,8 @@ import {
   serverTimestamp,
   addDoc,
   Timestamp,
+  writeBatch,
+  WriteBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Study, StudyMember, DayPlan, Assignment } from "@/types/study";
@@ -41,6 +43,7 @@ export async function createStudy(
 ): Promise<{ studyId: string; inviteCode: string }> {
   try {
     const inviteCode = generateInviteCode();
+    const batch = writeBatch(db);
 
     // Create study document
     const studyRef = doc(collection(db, "studies"));
@@ -60,7 +63,7 @@ export async function createStudy(
       updatedAt: serverTimestamp() as any,
     };
 
-    await setDoc(studyRef, study);
+    batch.set(studyRef, study);
 
     // Add owner as first member
     const memberRef = doc(collection(db, "studyMembers"));
@@ -73,10 +76,13 @@ export async function createStudy(
       progressRate: 0,
     };
 
-    await setDoc(memberRef, member);
+    batch.set(memberRef, member);
 
-    // Create 15 day plans
-    await create15DayPlans(studyId, studyData.bookTitle);
+    // Create 15 day plans (adds to batch)
+    create15DayPlans(batch, studyId, studyData.bookTitle);
+
+    // Commit all changes in a single transaction
+    await batch.commit();
 
     return { studyId, inviteCode };
   } catch (error) {
@@ -88,7 +94,7 @@ export async function createStudy(
 /**
  * Create 15 day plans for a study
  */
-async function create15DayPlans(studyId: string, bookTitle: string) {
+function create15DayPlans(batch: WriteBatch, studyId: string, bookTitle: string) {
   const dayPlans = [
     {
       dayNumber: 1,
@@ -193,17 +199,17 @@ async function create15DayPlans(studyId: string, bookTitle: string) {
       description: `Day ${plan.dayNumber}: ${plan.title}`,
     };
 
-    await setDoc(planRef, dayPlan);
+    batch.set(planRef, dayPlan);
 
     // Create sample assignments for each day
-    await createAssignmentsForDay(planRef.id, plan.dayNumber);
+    createAssignmentsForDay(batch, planRef.id, plan.dayNumber);
   }
 }
 
 /**
  * Create assignments for a day plan
  */
-async function createAssignmentsForDay(planId: string, dayNumber: number) {
+function createAssignmentsForDay(batch: WriteBatch, planId: string, dayNumber: number) {
   const assignments = [
     {
       questionText: `What are the key concepts you learned today?`,
@@ -231,7 +237,7 @@ async function createAssignmentsForDay(planId: string, dayNumber: number) {
       isRequired: assignment.isRequired,
     };
 
-    await setDoc(assignmentRef, assignmentData);
+    batch.set(assignmentRef, assignmentData);
   }
 }
 
