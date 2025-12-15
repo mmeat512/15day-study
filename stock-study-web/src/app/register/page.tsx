@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -88,6 +88,17 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
+      
+      // Rollback: try to delete the auth user if Firestore creation failed
+      if (auth.currentUser) {
+        try {
+          await deleteUser(auth.currentUser);
+          console.log("Rolled back: Deleted auth user due to Firestore failure");
+        } catch (deleteErr) {
+          console.error("Failed to rollback auth user:", deleteErr);
+        }
+      }
+
       setError(err.message || "Failed to register.");
     } finally {
       setLoading(false);

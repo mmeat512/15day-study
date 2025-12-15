@@ -32,6 +32,9 @@ export default function CreateStudyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("DEBUG: Submit button clicked");
+    console.log("DEBUG: Current FormData:", formData);
+    
     setError("");
 
     if (!user) {
@@ -42,6 +45,7 @@ export default function CreateStudyPage() {
     setLoading(true);
 
     try {
+      console.log("DEBUG: Attempting to create study...");
       const { studyId, inviteCode } = await createStudy(
         {
           studyName: formData.studyName,
@@ -60,7 +64,8 @@ export default function CreateStudyPage() {
       );
       router.push("/dashboard");
     } catch (err: any) {
-      console.error("Error creating study:", err);
+      console.error("DEBUG: Error creating study:", err);
+      alert(`Error creating study: ${err.message}`);
       setError(err.message || "Failed to create study. Please try again.");
     } finally {
       setLoading(false);
