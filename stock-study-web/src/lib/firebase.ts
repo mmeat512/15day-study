@@ -16,6 +16,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
 // Initialize Firestore with settings
+import {
   initializeFirestore,
   memoryLocalCache,
 } from "firebase/firestore";
