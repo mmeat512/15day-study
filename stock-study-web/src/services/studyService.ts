@@ -81,8 +81,10 @@ export async function createStudy(
     // Create 15 day plans (adds to batch)
     create15DayPlans(batch, studyId, studyData.bookTitle);
 
+    console.log("DEBUG: Created batch operations. Starting commit...");
     // Commit all changes in a single transaction
     await batch.commit();
+    console.log("DEBUG: Batch commit successful!");
 
     return { studyId, inviteCode };
   } catch (error) {
