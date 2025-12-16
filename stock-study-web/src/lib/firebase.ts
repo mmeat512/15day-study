@@ -18,12 +18,14 @@ const isAppInitialized = getApps().length > 0;
 const app = isAppInitialized ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Initialize Firestore with long polling for Vercel compatibility
-// CRITICAL: Only initialize Firestore once, on first app initialization
+// Initialize Firestore with auto-detect long polling for Vercel compatibility
+// Modern approach: Auto-detect when long-polling is needed (better for serverless)
+// Also disable useFetchStreams to avoid hanging queries on Vercel
 const db = isAppInitialized
   ? getFirestore(app)
   : initializeFirestore(app, {
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false,
     });
 
 // Validate config
