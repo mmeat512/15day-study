@@ -2,21 +2,12 @@
 
 import { useState } from "react";
 import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
-import { auth, db } from "../../lib/firebase";
+import { auth } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Loader2 } from "lucide-react";
-import {
-  doc,
-  setDoc,
-  serverTimestamp,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
 
 import { useAuth } from "../../contexts/AuthContext";
 import { useEffect } from "react";
@@ -53,19 +44,7 @@ export default function RegisterPage() {
         throw new Error("Password must be at least 6 characters long.");
       }
 
-      // TEMPORARILY DISABLED: Username uniqueness check
-      // This causes Firestore Listen channel errors on Vercel
-      // TODO: Implement server-side check via API route
-      // const q = query(
-      //   collection(db, "users"),
-      //   where("username", "==", username)
-      // );
-      // const querySnapshot = await getDocs(q);
-      // if (!querySnapshot.empty) {
-      //   throw new Error("Username already taken. Please choose another one.");
-      // }
-
-      // Create user in Firebase Auth
+      // Create user in Firebase Auth first
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -73,20 +52,29 @@ export default function RegisterPage() {
       );
       const user = userCredential.user;
 
-      // Create user document in Firestore BEFORE updating profile
-      // This ensures the document exists when AuthContext tries to read it
-      console.log("🔥 Creating Firestore user document for:", user.uid);
+      // Create user document in Firestore via server-side API
+      // This bypasses Vercel's WebSocket/WebChannel restrictions
+      console.log("🔥 Creating Firestore user document via API for:", user.uid);
       try {
-        await setDoc(doc(db, "users", user.uid), {
-          username: username,
-          email: email,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+        const response = await fetch('/api/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: user.uid,
+            username: username,
+            email: email
+          })
         });
-        console.log("✅ Firestore user document created successfully!");
-      } catch (firestoreError) {
-        console.error("❌ Failed to create Firestore document:", firestoreError);
-        throw new Error("Failed to create user profile. Please try again.");
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create user profile');
+        }
+
+        console.log("✅ Firestore user document created successfully via API!");
+      } catch (apiError: any) {
+        console.error("❌ Failed to create Firestore document via API:", apiError);
+        throw new Error(apiError.message || "Failed to create user profile. Please try again.");
       }
 
       // Update profile with username AFTER Firestore document is created
