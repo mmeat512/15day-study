@@ -53,16 +53,17 @@ export default function RegisterPage() {
         throw new Error("Password must be at least 6 characters long.");
       }
 
-      // Check if username already exists
-      const q = query(
-        collection(db, "users"),
-        where("username", "==", username)
-      );
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        throw new Error("Username already taken. Please choose another one.");
-      }
+      // TEMPORARILY DISABLED: Username uniqueness check
+      // This causes Firestore Listen channel errors on Vercel
+      // TODO: Implement server-side check via API route
+      // const q = query(
+      //   collection(db, "users"),
+      //   where("username", "==", username)
+      // );
+      // const querySnapshot = await getDocs(q);
+      // if (!querySnapshot.empty) {
+      //   throw new Error("Username already taken. Please choose another one.");
+      // }
 
       // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
