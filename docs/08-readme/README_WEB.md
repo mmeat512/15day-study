@@ -48,7 +48,7 @@ Stock Study 15-Day Tracker는 주식 공부를 위한 스터디 그룹을 관리
 ### Backend & Database
 - **Firebase 12.6.0**
   - Firebase Authentication - 사용자 인증
-  - Firestore - NoSQL 데이터베이스 (persistent local cache 활성화)
+  - Firestore - NoSQL 데이터베이스 (최적화된 캐싱)
 
 ### UI Components
 - **Radix UI** - 접근성 높은 UI 컴포넌트
@@ -270,12 +270,13 @@ src/
 
 ## 최근 업데이트
 
+- **[2025-12-16]** Vercel 배포 Firestore 오프라인 오류 수정 (memoryLocalCache 제거)
 - Vercel 자동 배포 설정 완료
 - Playwright E2E 테스트 추가 및 모든 테스트 통과
 - 로그인 로딩 표시 및 리다이렉트 개선
 - 스터디 생성 시 undefined 오류 수정
 - 대시보드 로드 속도 최적화 (Promise.all 활용)
-- Firestore persistent local cache 적용으로 오프라인 지원 개선
+- Firestore 최적화된 캐싱 적용
 - 이메일 또는 사용자명으로 로그인 가능
 - 사용자명 기반 회원가입 시 중복 체크 기능 추가
 - AuthContext를 통한 전역 인증 상태 관리
