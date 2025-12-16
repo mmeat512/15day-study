@@ -20,12 +20,10 @@ const auth = getAuth(app);
 
 // Initialize Firestore with auto-detect long polling for Vercel compatibility
 // Modern approach: Auto-detect when long-polling is needed (better for serverless)
-// Also disable useFetchStreams to avoid hanging queries on Vercel
 const db = isAppInitialized
   ? getFirestore(app)
   : initializeFirestore(app, {
       experimentalAutoDetectLongPolling: true,
-      useFetchStreams: false,
     });
 
 // Validate config
