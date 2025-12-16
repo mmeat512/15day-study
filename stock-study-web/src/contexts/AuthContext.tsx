@@ -36,9 +36,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           console.log("AuthContext: Firestore doc fetched", userDoc.exists());
+          console.log("🔍 Firestore doc path:", `users/${firebaseUser.uid}`);
+          console.log("🔍 Firebase Project ID:", db.app.options.projectId);
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log("✅ Firestore userData:", JSON.stringify(userData));
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email || undefined,
