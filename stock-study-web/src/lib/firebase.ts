@@ -12,15 +12,19 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Check if app is already initialized BEFORE any operations
+const isAppInitialized = getApps().length > 0;
+
+const app = isAppInitialized ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // Initialize Firestore with long polling for Vercel compatibility
-const db = !getApps().length
-  ? initializeFirestore(app, {
+// CRITICAL: Only initialize Firestore once, on first app initialization
+const db = isAppInitialized
+  ? getFirestore(app)
+  : initializeFirestore(app, {
       experimentalForceLongPolling: true,
-    })
-  : getFirestore(app);
+    });
 
 // Validate config
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// Test on PRODUCTION (latest deployment)
-const BASE_URL = 'https://stock-study-r178esr3c-mmeat512s-projects.vercel.app';
+// Test on PRODUCTION (via production alias)
+const BASE_URL = 'https://stock-study-web.vercel.app';
 
 test('Debug Firestore on PRODUCTION - Vercel deployment', async ({ page }) => {
   const timestamp = Date.now();
