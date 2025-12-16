@@ -72,12 +72,8 @@ export default function RegisterPage() {
       );
       const user = userCredential.user;
 
-      // Update profile with username
-      await updateProfile(user, {
-        displayName: username,
-      });
-
-      // Create user document in Firestore
+      // Create user document in Firestore BEFORE updating profile
+      // This ensures the document exists when AuthContext tries to read it
       console.log("🔥 Creating Firestore user document for:", user.uid);
       try {
         await setDoc(doc(db, "users", user.uid), {
@@ -91,6 +87,11 @@ export default function RegisterPage() {
         console.error("❌ Failed to create Firestore document:", firestoreError);
         throw new Error("Failed to create user profile. Please try again.");
       }
+
+      // Update profile with username AFTER Firestore document is created
+      await updateProfile(user, {
+        displayName: username,
+      });
 
       console.log("🚀 Redirecting to dashboard...");
       router.push("/dashboard");
