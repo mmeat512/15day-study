@@ -78,13 +78,21 @@ export default function RegisterPage() {
       });
 
       // Create user document in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        username: username,
-        email: email,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      console.log("🔥 Creating Firestore user document for:", user.uid);
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          username: username,
+          email: email,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        console.log("✅ Firestore user document created successfully!");
+      } catch (firestoreError) {
+        console.error("❌ Failed to create Firestore document:", firestoreError);
+        throw new Error("Failed to create user profile. Please try again.");
+      }
 
+      console.log("🚀 Redirecting to dashboard...");
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
