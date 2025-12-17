@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
@@ -10,7 +9,6 @@ import { Input } from "../../components/ui/input";
 import { Loader2 } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
-import { useEffect } from "react";
 
 export default function RegisterPage() {
   const { user, loading: authLoading } = useAuth();
@@ -39,64 +37,44 @@ export default function RegisterPage() {
         throw new Error("Passwords do not match. Please try again.");
       }
 
-      // Check if password is at least 6 characters
-      if (password.length < 6) {
-        throw new Error("Password must be at least 6 characters long.");
+      // Check if password is at least 8 characters
+      if (password.length < 8) {
+        throw new Error("Password must be at least 8 characters long.");
       }
 
-      // Create user in Firebase Auth first
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      // Create user document in Firestore via server-side API
-      // This bypasses Vercel's WebSocket/WebChannel restrictions
-      console.log("🔥 Creating Firestore user document via API for:", user.uid);
-      try {
-        const response = await fetch('/api/users/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uid: user.uid,
-            username: username,
-            email: email
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create user profile');
-        }
-
-        console.log("✅ Firestore user document created successfully via API!");
-      } catch (apiError: any) {
-        console.error("❌ Failed to create Firestore document via API:", apiError);
-        throw new Error(apiError.message || "Failed to create user profile. Please try again.");
-      }
-
-      // Update profile with username AFTER Firestore document is created
-      await updateProfile(user, {
-        displayName: username,
+      // Call registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username,
+          email: email,
+          password: password
+        })
       });
 
-      console.log("🚀 Redirecting to dashboard...");
-      router.push("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      
-      // Rollback: try to delete the auth user if Firestore creation failed
-      if (auth.currentUser) {
-        try {
-          await deleteUser(auth.currentUser);
-          console.log("Rolled back: Deleted auth user due to Firestore failure");
-        } catch (deleteErr) {
-          console.error("Failed to rollback auth user:", deleteErr);
-        }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
       }
 
+      // Auto sign in after successful registration
+      const signInResult = await signIn("credentials", {
+        usernameOrEmail: username,
+        password: password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        // Registration succeeded but auto login failed
+        setError("Account created! Please login with your credentials.");
+        setTimeout(() => router.push("/login"), 2000);
+      } else if (signInResult?.ok) {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      console.error("Registration error:", err);
       setError(err.message || "Failed to register.");
     } finally {
       setLoading(false);
@@ -158,7 +136,7 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                placeholder="Password (min. 6 characters)"
+                placeholder="Password (min. 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="dark:bg-gray-700 dark:text-white"

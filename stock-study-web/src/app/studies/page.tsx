@@ -15,7 +15,7 @@ import { Study } from "../../types/study";
 import Link from "next/link";
 import { Plus, LogIn, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { getUserStudiesWithProgress } from "../../services/studyService";
+import { getUserStudiesWithProgressAction } from "../../actions/studyActions";
 
 export default function StudyListPage() {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ export default function StudyListPage() {
 
       try {
         setLoading(true);
-        const studiesData = await getUserStudiesWithProgress(user.uid);
+        const studiesData = await getUserStudiesWithProgressAction(user.uid);
 
         const studiesWithProgress = studiesData.map((data) => ({
           study: data.study,

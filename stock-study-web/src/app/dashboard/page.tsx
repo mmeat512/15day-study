@@ -7,10 +7,10 @@ import { TodayAssignmentCard } from "../../components/dashboard/TodayAssignmentC
 import { useAuth } from "../../contexts/AuthContext";
 import { Study, DayPlan } from "../../types/study";
 import {
-  getUserStudiesWithProgress,
-  getDayPlans,
+  getUserStudiesWithProgressAction,
+  getDayPlansAction,
   getCurrentDayNumber,
-} from "../../services/studyService";
+} from "../../actions/studyActions";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
@@ -37,7 +37,7 @@ export default function DashboardPage() {
         console.log("🚀 Loading dashboard data for user:", user.uid);
 
         // Get user's studies with progress
-        const studies = await getUserStudiesWithProgress(user.uid);
+        const studies = await getUserStudiesWithProgressAction(user.uid);
         console.log("📊 Dashboard received studies:", studies);
 
         if (studies.length > 0) {
@@ -53,7 +53,7 @@ export default function DashboardPage() {
           setProgress(Math.min(100, calculatedProgress));
 
           // Get day plans for this study
-          const dayPlans = await getDayPlans(primaryStudyData.study.studyId);
+          const dayPlans = await getDayPlansAction(primaryStudyData.study.studyId);
 
           // Find today's day plan
           const todayPlan = dayPlans.find(

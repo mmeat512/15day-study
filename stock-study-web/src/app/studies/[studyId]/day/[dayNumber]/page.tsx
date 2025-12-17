@@ -11,14 +11,14 @@ import { Button } from "../../../../../components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { DayPlan, Assignment, SubmissionAnswer } from "../../../../../types/study";
 import {
-  getDayPlans,
-  getAssignments,
-} from "../../../../../services/studyService";
+  getDayPlansAction,
+  getAssignmentsAction,
+} from "../../../../../actions/studyActions";
 import {
-  createSubmission,
-  getSubmission,
-  updateProgressRate,
-} from "../../../../../services/submissionService";
+  createSubmissionAction,
+  getSubmissionAction,
+  updateProgressRateAction,
+} from "../../../../../actions/submissionActions";
 import { useAuth } from "../../../../../contexts/AuthContext";
 
 export default function DayDetailPage() {
@@ -45,7 +45,7 @@ export default function DayDetailPage() {
         setLoading(true);
 
         // Get day plans for this study
-        const dayPlans = await getDayPlans(studyId);
+        const dayPlans = await getDayPlansAction(studyId);
 
         // Find the specific day
         const currentDayPlan = dayPlans.find(
@@ -60,11 +60,11 @@ export default function DayDetailPage() {
         setDayPlan(currentDayPlan);
 
         // Get assignments for this day
-        const dayAssignments = await getAssignments(currentDayPlan.planId);
+        const dayAssignments = await getAssignmentsAction(currentDayPlan.planId);
         setAssignments(dayAssignments);
 
         // Check if user has already submitted
-        const existingSubmission = await getSubmission(
+        const existingSubmission = await getSubmissionAction(
           currentDayPlan.planId,
           user.uid
         );
@@ -117,7 +117,7 @@ export default function DayDetailPage() {
       }));
 
       // Create submission
-      const newSubmissionId = await createSubmission({
+      const newSubmissionId = await createSubmissionAction({
         planId: dayPlan.planId,
         studyId: studyId,
         userId: user.uid,
@@ -127,7 +127,7 @@ export default function DayDetailPage() {
       });
 
       // Update progress rate
-      await updateProgressRate(studyId, user.uid);
+      await updateProgressRateAction(studyId, user.uid);
 
       setIsSubmitted(true);
       setSubmissionId(newSubmissionId);

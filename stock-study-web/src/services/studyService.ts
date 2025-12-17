@@ -1,19 +1,17 @@
+import { db } from "@/lib/db";
 import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  serverTimestamp,
-  addDoc,
-  Timestamp,
-  writeBatch,
-  WriteBatch,
-} from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import { Study, StudyMember, DayPlan, Assignment } from "@/types/study";
+  studies,
+  studyMembers,
+  dayPlans,
+  assignments,
+  users,
+  type Study,
+  type StudyMember,
+  type DayPlan,
+  type Assignment,
+} from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 /**
  * Generate a random invite code
@@ -28,7 +26,8 @@ function generateInviteCode(): string {
 }
 
 /**
- * Create a new study
+ * Create a new study with 15 day plans and 45 assignments
+ * Uses PostgreSQL transaction for atomicity
  */
 export async function createStudy(
   studyData: {
@@ -41,69 +40,54 @@ export async function createStudy(
   },
   ownerId: string
 ): Promise<{ studyId: string; inviteCode: string }> {
-  try {
-    const inviteCode = generateInviteCode();
-    const batch = writeBatch(db);
+  const inviteCode = generateInviteCode();
+  const studyId = nanoid();
 
-    // Create study document
-    const studyRef = doc(collection(db, "studies"));
-    const studyId = studyRef.id;
-
-    const study: Omit<Study, "studyId"> = {
+  await db.transaction(async (tx) => {
+    // 1. Create study
+    await tx.insert(studies).values({
+      id: studyId,
       studyName: studyData.studyName,
-      description: studyData.description || "", // Prevent undefined value
+      description: studyData.description || "",
       bookTitle: studyData.bookTitle,
       inviteCode: inviteCode,
-      startDate: Timestamp.fromDate(studyData.startDate) as any,
-      endDate: Timestamp.fromDate(studyData.endDate) as any,
+      startDate: studyData.startDate,
+      endDate: studyData.endDate,
       ownerId: ownerId,
       status: "active",
       maxMembers: studyData.maxMembers,
-      createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any,
-    };
+    });
 
-    batch.set(studyRef, study);
-
-    // Add owner as first member
-    const memberRef = doc(collection(db, "studyMembers"));
-    const member: Omit<StudyMember, "memberId"> = {
+    // 2. Add owner as first member
+    await tx.insert(studyMembers).values({
+      id: nanoid(),
       studyId: studyId,
       userId: ownerId,
       role: "owner",
-      joinedAt: serverTimestamp() as any,
       isActive: true,
       progressRate: 0,
-    };
+    });
 
-    batch.set(memberRef, member);
+    // 3. Create 15 day plans
+    const dayPlanData = getDayPlanTemplates(studyId);
+    const insertedPlans = await tx.insert(dayPlans).values(dayPlanData).returning();
 
-    // Create 15 day plans (adds to batch)
-    create15DayPlans(batch, studyId, studyData.bookTitle);
+    // 4. Create 3 assignments for each day plan (45 total)
+    const assignmentData: Array<typeof assignments.$inferInsert> = [];
+    for (const plan of insertedPlans) {
+      assignmentData.push(...getAssignmentTemplates(plan.id));
+    }
+    await tx.insert(assignments).values(assignmentData);
+  });
 
-    console.log("DEBUG: Created batch operations. Starting commit...");
-    
-    // Debug Connection Info
-    console.log("DEBUG: Firebase Config ProjectId:", auth.app.options.projectId);
-    console.log("DEBUG: Current User UID:", auth.currentUser?.uid);
-    console.log("DEBUG: Database Instance:", db.app.options.projectId);
-
-    // Commit all changes in a single transaction
-    await batch.commit();
-    console.log("DEBUG: Batch commit successful!");
-
-    return { studyId, inviteCode };
-  } catch (error) {
-    console.error("Error creating study:", error);
-    throw error;
-  }
+  return { studyId, inviteCode };
 }
 
 /**
- * Create 15 day plans for a study
+ * Get day plan templates for a study
  */
-function create15DayPlans(batch: WriteBatch, studyId: string, bookTitle: string) {
-  const dayPlans = [
+function getDayPlanTemplates(studyId: string): Array<typeof dayPlans.$inferInsert> {
+  const dayPlanTemplates = [
     {
       dayNumber: 1,
       title: "Introduction to Stock Market",
@@ -196,266 +180,138 @@ function create15DayPlans(batch: WriteBatch, studyId: string, bookTitle: string)
     },
   ];
 
-  for (const plan of dayPlans) {
-    const planRef = doc(collection(db, "dayPlans"));
-    const dayPlan: Omit<DayPlan, "planId"> = {
-      studyId: studyId,
-      dayNumber: plan.dayNumber,
-      title: plan.title,
-      learningGoal: plan.learningGoal,
-      chapterInfo: plan.chapterInfo,
-      description: `Day ${plan.dayNumber}: ${plan.title}`,
-    };
-
-    batch.set(planRef, dayPlan);
-
-    // Create sample assignments for each day
-    createAssignmentsForDay(batch, planRef.id, plan.dayNumber);
-  }
+  return dayPlanTemplates.map((template) => ({
+    id: nanoid(),
+    studyId: studyId,
+    dayNumber: template.dayNumber,
+    title: template.title,
+    learningGoal: template.learningGoal,
+    chapterInfo: template.chapterInfo,
+    description: `Day ${template.dayNumber}: ${template.title}`,
+    targetDate: new Date(), // Will be calculated based on start date in UI
+  }));
 }
 
 /**
- * Create assignments for a day plan
+ * Get assignment templates for a day plan
  */
-function createAssignmentsForDay(batch: WriteBatch, planId: string, dayNumber: number) {
-  const assignments = [
+function getAssignmentTemplates(planId: string): Array<typeof assignments.$inferInsert> {
+  return [
     {
-      questionText: `What are the key concepts you learned today?`,
+      id: nanoid(),
+      planId: planId,
+      questionText: "What are the key concepts you learned today?",
       questionOrder: 1,
       isRequired: true,
     },
     {
-      questionText: `How can you apply today's learning to your investment strategy?`,
+      id: nanoid(),
+      planId: planId,
+      questionText: "How can you apply today's learning to your investment strategy?",
       questionOrder: 2,
       isRequired: true,
     },
     {
-      questionText: `What questions or uncertainties do you still have?`,
+      id: nanoid(),
+      planId: planId,
+      questionText: "What questions or uncertainties do you still have?",
       questionOrder: 3,
       isRequired: false,
     },
   ];
-
-  for (const assignment of assignments) {
-    const assignmentRef = doc(collection(db, "assignments"));
-    const assignmentData: Omit<Assignment, "assignmentId"> = {
-      planId: planId,
-      questionText: assignment.questionText,
-      questionOrder: assignment.questionOrder,
-      isRequired: assignment.isRequired,
-    };
-
-    batch.set(assignmentRef, assignmentData);
-  }
 }
 
 /**
  * Join a study using invite code
  */
-export async function joinStudy(
-  inviteCode: string,
-  userId: string
-): Promise<string> {
-  try {
-    // Find study by invite code
-    const studiesRef = collection(db, "studies");
-    const q = query(studiesRef, where("inviteCode", "==", inviteCode));
-    const querySnapshot = await getDocs(q);
+export async function joinStudy(inviteCode: string, userId: string): Promise<string> {
+  // Find study by invite code
+  const study = await db.query.studies.findFirst({
+    where: eq(studies.inviteCode, inviteCode),
+  });
 
-    if (querySnapshot.empty) {
-      throw new Error("Invalid invite code");
-    }
-
-    const studyDoc = querySnapshot.docs[0];
-    const studyId = studyDoc.id;
-    const studyData = studyDoc.data() as Study;
-
-    // Check if user is already a member
-    const membersRef = collection(db, "studyMembers");
-    const memberQuery = query(
-      membersRef,
-      where("studyId", "==", studyId),
-      where("userId", "==", userId)
-    );
-    const memberSnapshot = await getDocs(memberQuery);
-
-    if (!memberSnapshot.empty) {
-      throw new Error("You are already a member of this study");
-    }
-
-    // Check if study is full
-    const allMembersQuery = query(membersRef, where("studyId", "==", studyId));
-    const allMembersSnapshot = await getDocs(allMembersQuery);
-
-    if (allMembersSnapshot.size >= studyData.maxMembers) {
-      throw new Error("This study has reached its maximum capacity");
-    }
-
-    // Add user as member
-    const newMemberRef = doc(collection(db, "studyMembers"));
-    const member: Omit<StudyMember, "memberId"> = {
-      studyId: studyId,
-      userId: userId,
-      role: "member",
-      joinedAt: serverTimestamp() as any,
-      isActive: true,
-      progressRate: 0,
-    };
-
-    await setDoc(newMemberRef, member);
-
-    return studyId;
-  } catch (error) {
-    console.error("Error joining study:", error);
-    throw error;
+  if (!study) {
+    throw new Error("Invalid invite code");
   }
+
+  // Check if user is already a member
+  const existingMember = await db.query.studyMembers.findFirst({
+    where: and(eq(studyMembers.studyId, study.id), eq(studyMembers.userId, userId)),
+  });
+
+  if (existingMember) {
+    throw new Error("You are already a member of this study");
+  }
+
+  // Check if study is full
+  const allMembers = await db.query.studyMembers.findMany({
+    where: eq(studyMembers.studyId, study.id),
+  });
+
+  if (allMembers.length >= study.maxMembers) {
+    throw new Error("This study has reached its maximum capacity");
+  }
+
+  // Add user as member
+  await db.insert(studyMembers).values({
+    id: nanoid(),
+    studyId: study.id,
+    userId: userId,
+    role: "member",
+    isActive: true,
+    progressRate: 0,
+  });
+
+  return study.id;
 }
 
 /**
  * Get user's studies
  */
 export async function getUserStudies(userId: string): Promise<Study[]> {
-  try {
-    // Get all study memberships for user
-    const membersRef = collection(db, "studyMembers");
-    const q = query(
-      membersRef,
-      where("userId", "==", userId),
-      where("isActive", "==", true)
-    );
-    const memberSnapshot = await getDocs(q);
+  const members = await db.query.studyMembers.findMany({
+    where: and(eq(studyMembers.userId, userId), eq(studyMembers.isActive, true)),
+    with: {
+      study: true,
+    },
+  });
 
-    const studies: Study[] = [];
-
-    for (const memberDoc of memberSnapshot.docs) {
-      const memberData = memberDoc.data() as StudyMember;
-      const studyRef = doc(db, "studies", memberData.studyId);
-      const studyDoc = await getDoc(studyRef);
-
-      if (studyDoc.exists()) {
-        const studyData = studyDoc.data();
-        studies.push({
-          studyId: studyDoc.id,
-          studyName: studyData.studyName,
-          description: studyData.description,
-          bookTitle: studyData.bookTitle,
-          inviteCode: studyData.inviteCode,
-          startDate: studyData.startDate?.toDate() || new Date(),
-          endDate: studyData.endDate?.toDate() || new Date(),
-          ownerId: studyData.ownerId,
-          status: studyData.status,
-          maxMembers: studyData.maxMembers,
-          createdAt: studyData.createdAt?.toDate() || new Date(),
-          updatedAt: studyData.updatedAt?.toDate() || new Date(),
-        });
-      }
-    }
-
-    return studies;
-  } catch (error) {
-    console.error("Error getting user studies:", error);
-    throw error;
-  }
+  return members.map((member) => member.study);
 }
 
 /**
  * Get study details
  */
 export async function getStudy(studyId: string): Promise<Study | null> {
-  try {
-    const studyRef = doc(db, "studies", studyId);
-    const studyDoc = await getDoc(studyRef);
+  const study = await db.query.studies.findFirst({
+    where: eq(studies.id, studyId),
+  });
 
-    if (!studyDoc.exists()) {
-      return null;
-    }
-
-    const studyData = studyDoc.data();
-    return {
-      studyId: studyDoc.id,
-      studyName: studyData.studyName,
-      description: studyData.description,
-      bookTitle: studyData.bookTitle,
-      inviteCode: studyData.inviteCode,
-      startDate: studyData.startDate?.toDate() || new Date(),
-      endDate: studyData.endDate?.toDate() || new Date(),
-      ownerId: studyData.ownerId,
-      status: studyData.status,
-      maxMembers: studyData.maxMembers,
-      createdAt: studyData.createdAt?.toDate() || new Date(),
-      updatedAt: studyData.updatedAt?.toDate() || new Date(),
-    };
-  } catch (error) {
-    console.error("Error getting study:", error);
-    throw error;
-  }
+  return study || null;
 }
 
 /**
  * Get day plans for a study
  */
 export async function getDayPlans(studyId: string): Promise<DayPlan[]> {
-  try {
-    const plansRef = collection(db, "dayPlans");
-    const q = query(plansRef, where("studyId", "==", studyId));
-    const querySnapshot = await getDocs(q);
+  const plans = await db.query.dayPlans.findMany({
+    where: eq(dayPlans.studyId, studyId),
+    orderBy: (dayPlans, { asc }) => [asc(dayPlans.dayNumber)],
+  });
 
-    const dayPlans: DayPlan[] = [];
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      dayPlans.push({
-        planId: doc.id,
-        studyId: data.studyId,
-        dayNumber: data.dayNumber,
-        title: data.title,
-        learningGoal: data.learningGoal,
-        chapterInfo: data.chapterInfo,
-        description: data.description,
-        targetDate: data.targetDate?.toDate(),
-      });
-    });
-
-    // Sort by day number
-    dayPlans.sort((a, b) => a.dayNumber - b.dayNumber);
-
-    return dayPlans;
-  } catch (error) {
-    console.error("Error getting day plans:", error);
-    throw error;
-  }
+  return plans;
 }
 
 /**
  * Get assignments for a day plan
  */
 export async function getAssignments(planId: string): Promise<Assignment[]> {
-  try {
-    const assignmentsRef = collection(db, "assignments");
-    const q = query(assignmentsRef, where("planId", "==", planId));
-    const querySnapshot = await getDocs(q);
+  const assignmentList = await db.query.assignments.findMany({
+    where: eq(assignments.planId, planId),
+    orderBy: (assignments, { asc }) => [asc(assignments.questionOrder)],
+  });
 
-    const assignments: Assignment[] = [];
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      assignments.push({
-        assignmentId: doc.id,
-        planId: data.planId,
-        questionText: data.questionText,
-        questionOrder: data.questionOrder,
-        isRequired: data.isRequired,
-      });
-    });
-
-    // Sort by question order
-    assignments.sort((a, b) => a.questionOrder - b.questionOrder);
-
-    return assignments;
-  } catch (error) {
-    console.error("Error getting assignments:", error);
-    throw error;
-  }
+  return assignmentList;
 }
 
 /**
@@ -465,35 +321,11 @@ export async function getUserStudyMember(
   userId: string,
   studyId: string
 ): Promise<StudyMember | null> {
-  try {
-    const membersRef = collection(db, "studyMembers");
-    const q = query(
-      membersRef,
-      where("userId", "==", userId),
-      where("studyId", "==", studyId)
-    );
-    const querySnapshot = await getDocs(q);
+  const member = await db.query.studyMembers.findFirst({
+    where: and(eq(studyMembers.userId, userId), eq(studyMembers.studyId, studyId)),
+  });
 
-    if (querySnapshot.empty) {
-      return null;
-    }
-
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-
-    return {
-      memberId: doc.id,
-      studyId: data.studyId,
-      userId: data.userId,
-      role: data.role,
-      joinedAt: data.joinedAt?.toDate() || new Date(),
-      isActive: data.isActive,
-      progressRate: data.progressRate || 0,
-    };
-  } catch (error) {
-    console.error("Error getting user study member:", error);
-    throw error;
-  }
+  return member || null;
 }
 
 /**
@@ -515,24 +347,19 @@ export function getCurrentDayNumber(startDate: Date): number {
 export async function getStudyWithMemberCount(
   studyId: string
 ): Promise<{ study: Study; memberCount: number } | null> {
-  try {
-    const study = await getStudy(studyId);
-    if (!study) {
-      return null;
-    }
-
-    const membersRef = collection(db, "studyMembers");
-    const q = query(membersRef, where("studyId", "==", studyId));
-    const querySnapshot = await getDocs(q);
-
-    return {
-      study,
-      memberCount: querySnapshot.size,
-    };
-  } catch (error) {
-    console.error("Error getting study with member count:", error);
-    throw error;
+  const study = await getStudy(studyId);
+  if (!study) {
+    return null;
   }
+
+  const members = await db.query.studyMembers.findMany({
+    where: eq(studyMembers.studyId, studyId),
+  });
+
+  return {
+    study,
+    memberCount: members.length,
+  };
 }
 
 /**
@@ -548,173 +375,50 @@ export async function getUserStudiesWithProgress(
     memberCount: number;
   }>
 > {
-  try {
-    console.log("🔍 getUserStudiesWithProgress called with userId:", userId);
-    const membersRef = collection(db, "studyMembers");
-    const q = query(
-      membersRef,
-      where("userId", "==", userId),
-      where("isActive", "==", true)
-    );
-    const memberSnapshot = await getDocs(q);
-    console.log("📊 Found studyMembers:", memberSnapshot.size);
+  const members = await db.query.studyMembers.findMany({
+    where: and(eq(studyMembers.userId, userId), eq(studyMembers.isActive, true)),
+    with: {
+      study: true,
+    },
+  });
 
-    if (memberSnapshot.empty) {
-      console.warn("⚠️ No studyMembers found for user:", userId);
-      return [];
-    }
+  const result = await Promise.all(
+    members.map(async (member) => {
+      const allMembers = await db.query.studyMembers.findMany({
+        where: eq(studyMembers.studyId, member.studyId),
+      });
 
-    // Parallelize all study and member count queries
-    const studiesWithProgress = await Promise.all(
-      memberSnapshot.docs.map(async (memberDoc) => {
-        const memberData = memberDoc.data();
-        console.log("📝 Processing member:", memberDoc.id, memberData);
+      const currentDay = getCurrentDayNumber(member.study.startDate);
 
-        // Get study and member count in parallel
-        const [studyDoc, allMembersSnapshot] = await Promise.all([
-          getDoc(doc(db, "studies", memberData.studyId)),
-          getDocs(
-            query(membersRef, where("studyId", "==", memberData.studyId))
-          ),
-        ]);
+      return {
+        study: member.study,
+        memberInfo: member,
+        currentDay,
+        memberCount: allMembers.length,
+      };
+    })
+  );
 
-        if (!studyDoc.exists()) {
-          console.warn("⚠️ Study not found:", memberData.studyId);
-          return null;
-        }
-
-        const studyData = studyDoc.data();
-        console.log("📚 Study data:", studyDoc.id, studyData);
-        const study: Study = {
-          studyId: studyDoc.id,
-          studyName: studyData.studyName,
-          description: studyData.description,
-          bookTitle: studyData.bookTitle,
-          inviteCode: studyData.inviteCode,
-          startDate: studyData.startDate?.toDate() || new Date(),
-          endDate: studyData.endDate?.toDate() || new Date(),
-          ownerId: studyData.ownerId,
-          status: studyData.status,
-          maxMembers: studyData.maxMembers,
-          createdAt: studyData.createdAt?.toDate() || new Date(),
-          updatedAt: studyData.updatedAt?.toDate() || new Date(),
-        };
-
-        // Calculate current day
-        const currentDay = getCurrentDayNumber(study.startDate);
-
-        return {
-          study,
-          memberInfo: {
-            memberId: memberDoc.id,
-            studyId: memberData.studyId,
-            userId: memberData.userId,
-            role: memberData.role,
-            joinedAt: memberData.joinedAt?.toDate?.() || new Date(),
-            isActive: memberData.isActive,
-            progressRate: memberData.progressRate || 0,
-          },
-          currentDay,
-          memberCount: allMembersSnapshot.size,
-        };
-      })
-    );
-
-    // Filter out null results
-    const filteredStudies = studiesWithProgress.filter((item) => item !== null) as Array<{
-      study: Study;
-      memberInfo: StudyMember;
-      currentDay: number;
-      memberCount: number;
-    }>;
-    console.log("✅ Returning studies:", filteredStudies.length, filteredStudies);
-    return filteredStudies;
-  } catch (error) {
-    console.error("❌ Error getting user studies with progress:", error);
-    throw error;
-  }
+  return result;
 }
 
 /**
- * Get study by ID
+ * Get study by ID (alias for getStudy)
  */
 export async function getStudyById(studyId: string): Promise<Study | null> {
-  try {
-    const studyRef = doc(db, "studies", studyId);
-    const studyDoc = await getDoc(studyRef);
-
-    if (!studyDoc.exists()) {
-      return null;
-    }
-
-    const data = studyDoc.data();
-    return {
-      studyId: studyDoc.id,
-      studyName: data.studyName,
-      description: data.description,
-      bookTitle: data.bookTitle,
-      inviteCode: data.inviteCode,
-      startDate: data.startDate?.toDate() || new Date(),
-      endDate: data.endDate?.toDate() || new Date(),
-      ownerId: data.ownerId,
-      status: data.status,
-      maxMembers: data.maxMembers,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
-    };
-  } catch (error) {
-    console.error("Error getting study by ID:", error);
-    throw error;
-  }
+  return getStudy(studyId);
 }
 
 /**
  * Get all members of a study with user information
  */
 export async function getStudyMembers(studyId: string): Promise<StudyMember[]> {
-  try {
-    const membersRef = collection(db, "studyMembers");
-    const q = query(
-      membersRef,
-      where("studyId", "==", studyId),
-      where("isActive", "==", true)
-    );
-    const querySnapshot = await getDocs(q);
+  const members = await db.query.studyMembers.findMany({
+    where: and(eq(studyMembers.studyId, studyId), eq(studyMembers.isActive, true)),
+    with: {
+      user: true,
+    },
+  });
 
-    const members: StudyMember[] = [];
-
-    for (const memberDoc of querySnapshot.docs) {
-      const data = memberDoc.data();
-
-      // Get user data
-      const userRef = doc(db, "users", data.userId);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.exists() ? userDoc.data() : null;
-
-      members.push({
-        memberId: memberDoc.id,
-        studyId: data.studyId,
-        userId: data.userId,
-        role: data.role,
-        joinedAt: data.joinedAt?.toDate?.() || new Date(),
-        isActive: data.isActive,
-        progressRate: data.progressRate || 0,
-        user: userData
-          ? {
-              uid: data.userId,
-              username: userData.username,
-              email: userData.email,
-              createdAt: userData.createdAt?.toDate() || new Date(),
-              photoURL: userData.photoURL,
-              lastLoginAt: userData.lastLoginAt?.toDate(),
-            }
-          : undefined,
-      });
-    }
-
-    return members;
-  } catch (error) {
-    console.error("Error getting study members:", error);
-    throw error;
-  }
+  return members;
 }

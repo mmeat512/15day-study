@@ -10,12 +10,12 @@ import { Loader2, ArrowLeft, Users, BookOpen, Calendar, CheckCircle, Circle } fr
 import { Study, StudyMember, DayPlan } from "../../../types/study";
 import { useAuth } from "../../../contexts/AuthContext";
 import {
-  getStudyById,
-  getStudyMembers,
-  getDayPlans,
-  getUserStudyMember,
-} from "../../../services/studyService";
-import { getUserSubmissions } from "../../../services/submissionService";
+  getStudyByIdAction,
+  getStudyMembersAction,
+  getDayPlansAction,
+  getUserStudyMemberAction,
+} from "../../../actions/studyActions";
+import { getUserSubmissionsAction } from "../../../actions/submissionActions";
 import Link from "next/link";
 
 export default function StudyDetailPage() {
@@ -39,7 +39,7 @@ export default function StudyDetailPage() {
         setLoading(true);
 
         // Get study details
-        const studyData = await getStudyById(studyId);
+        const studyData = await getStudyByIdAction(studyId);
         if (!studyData) {
           console.error("Study not found");
           return;
@@ -47,22 +47,22 @@ export default function StudyDetailPage() {
         setStudy(studyData);
 
         // Get members
-        const membersData = await getStudyMembers(studyId);
+        const membersData = await getStudyMembersAction(studyId);
         setMembers(membersData);
 
         // Get day plans
-        const dayPlansData = await getDayPlans(studyId);
+        const dayPlansData = await getDayPlansAction(studyId);
         setDayPlans(dayPlansData);
 
         // Get user's submissions to check completed days
-        const submissions = await getUserSubmissions(studyId, user.uid);
+        const submissions = await getUserSubmissionsAction(studyId, user.uid);
         const completed = new Set(
           submissions.filter((s) => s.isCompleted).map((s) => s.dayNumber)
         );
         setCompletedDays(completed);
 
         // Get user's progress
-        const memberInfo = await getUserStudyMember(studyId, user.uid);
+        const memberInfo = await getUserStudyMemberAction(studyId, user.uid);
         if (memberInfo) {
           setUserProgress(memberInfo.progressRate || 0);
         }

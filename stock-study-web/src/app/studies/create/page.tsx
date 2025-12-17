@@ -7,7 +7,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { createStudy } from "../../../services/studyService";
+import { createStudyAction } from "../../../actions/studyActions";
 
 export default function CreateStudyPage() {
   const router = useRouter();
@@ -46,7 +46,7 @@ export default function CreateStudyPage() {
 
     try {
       console.log("DEBUG: Attempting to create study...");
-      const { studyId, inviteCode } = await createStudy(
+      const { studyId, inviteCode } = await createStudyAction(
         {
           studyName: formData.studyName,
           description: formData.description || undefined,

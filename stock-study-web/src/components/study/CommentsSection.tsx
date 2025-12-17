@@ -5,11 +5,11 @@ import { Button } from "../ui/button";
 import { Loader2, Send, Trash2, Edit2 } from "lucide-react";
 import { Comment } from "../../types/study";
 import {
-  getComments,
-  createComment,
-  updateComment,
-  deleteComment,
-} from "../../services/submissionService";
+  getCommentsAction,
+  createCommentAction,
+  updateCommentAction,
+  deleteCommentAction,
+} from "../../actions/submissionActions";
 import { useAuth } from "../../contexts/AuthContext";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -38,7 +38,7 @@ export function CommentsSection({
   async function loadComments() {
     try {
       setLoading(true);
-      const commentsData = await getComments(submissionId);
+      const commentsData = await getCommentsAction(submissionId);
 
       // Load user data for each comment
       const commentsWithUsers = await Promise.all(
@@ -73,7 +73,7 @@ export function CommentsSection({
 
     try {
       setPosting(true);
-      await createComment(submissionId, studyId, user.uid, newComment.trim());
+      await createCommentAction(submissionId, studyId, user.uid, newComment.trim());
       setNewComment("");
       await loadComments();
     } catch (error) {
@@ -88,7 +88,7 @@ export function CommentsSection({
     if (!editContent.trim()) return;
 
     try {
-      await updateComment(commentId, editContent.trim());
+      await updateCommentAction(commentId, editContent.trim());
 
       // Update local state instead of refetching all comments
       setComments((prevComments) =>
@@ -111,7 +111,7 @@ export function CommentsSection({
     if (!confirm("Are you sure you want to delete this comment?")) return;
 
     try {
-      await deleteComment(commentId);
+      await deleteCommentAction(commentId);
 
       // Remove from local state instead of refetching all comments
       setComments((prevComments) =>

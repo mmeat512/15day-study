@@ -8,9 +8,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { auth } from "../../lib/firebase";
-import { getUserStudiesWithProgress } from "../../services/studyService";
-import { getUserSubmissions } from "../../services/submissionService";
+import { signOut } from "next-auth/react";
+import { getUserStudiesWithProgressAction } from "../../actions/studyActions";
+import { getUserSubmissionsAction } from "../../actions/submissionActions";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Progress } from "../../components/ui/progress";
 
@@ -37,7 +37,7 @@ export default function MyPage() {
 
       try {
         setLoading(true);
-        const studies = await getUserStudiesWithProgress(user.uid);
+        const studies = await getUserStudiesWithProgressAction(user.uid);
 
         // Calculate stats
         const totalStudies = studies.length;
@@ -50,7 +50,7 @@ export default function MyPage() {
         const studyDetails = [];
 
         for (const studyData of studies) {
-          const submissions = await getUserSubmissions(
+          const submissions = await getUserSubmissionsAction(
             studyData.study.studyId,
             user.uid
           );
@@ -93,8 +93,7 @@ export default function MyPage() {
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
-      router.push("/login");
+      await signOut({ callbackUrl: "/login" });
     } catch (error) {
       console.error("Failed to log out", error);
     }

@@ -1,20 +1,22 @@
+import { db } from "@/lib/db";
 import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  serverTimestamp,
-  updateDoc,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Submission, SubmissionAnswer, Comment } from "@/types/study";
+  submissions,
+  comments,
+  studyMembers,
+  type Submission,
+  type Comment,
+} from "@/db/schema";
+import { eq, and, desc} from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+// Define SubmissionAnswer type to match the existing type
+export type SubmissionAnswer = {
+  assignmentId: string;
+  answer: string;
+};
 
 /**
- * Create or update a submission
+ * Create or update a submission (upsert)
  */
 export async function createSubmission(submissionData: {
   planId: string;
@@ -24,57 +26,45 @@ export async function createSubmission(submissionData: {
   answers: SubmissionAnswer[];
   reflection?: string;
 }): Promise<string> {
-  try {
-    // Check if submission already exists
-    const submissionsRef = collection(db, "submissions");
-    const q = query(
-      submissionsRef,
-      where("planId", "==", submissionData.planId),
-      where("userId", "==", submissionData.userId)
-    );
-    const existingSnapshot = await getDocs(q);
+  // Check if submission already exists
+  const existingSubmission = await db.query.submissions.findFirst({
+    where: and(
+      eq(submissions.planId, submissionData.planId),
+      eq(submissions.userId, submissionData.userId)
+    ),
+  });
 
-    let submissionRef;
-    let submissionId;
-
-    if (!existingSnapshot.empty) {
-      // Update existing submission
-      const existingDoc = existingSnapshot.docs[0];
-      submissionRef = doc(db, "submissions", existingDoc.id);
-      submissionId = existingDoc.id;
-
-      await updateDoc(submissionRef, {
-        answers: submissionData.answers,
+  if (existingSubmission) {
+    // Update existing submission
+    await db
+      .update(submissions)
+      .set({
+        answers: submissionData.answers as any,
         reflection: submissionData.reflection,
         isCompleted: true,
-        submittedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      // Create new submission
-      submissionRef = doc(collection(db, "submissions"));
-      submissionId = submissionRef.id;
+        submittedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(submissions.id, existingSubmission.id));
 
-      const submission: Omit<Submission, "submissionId"> = {
-        planId: submissionData.planId,
-        studyId: submissionData.studyId,
-        userId: submissionData.userId,
-        dayNumber: submissionData.dayNumber,
-        answers: submissionData.answers,
-        reflection: submissionData.reflection,
-        isCompleted: true,
-        submittedAt: serverTimestamp() as any,
-        createdAt: serverTimestamp() as any,
-        updatedAt: serverTimestamp() as any,
-      };
+    return existingSubmission.id;
+  } else {
+    // Create new submission
+    const submissionId = nanoid();
 
-      await setDoc(submissionRef, submission);
-    }
+    await db.insert(submissions).values({
+      id: submissionId,
+      planId: submissionData.planId,
+      studyId: submissionData.studyId,
+      userId: submissionData.userId,
+      dayNumber: submissionData.dayNumber,
+      answers: submissionData.answers as any,
+      reflection: submissionData.reflection,
+      isCompleted: true,
+      submittedAt: new Date(),
+    });
 
     return submissionId;
-  } catch (error) {
-    console.error("Error creating submission:", error);
-    throw error;
   }
 }
 
@@ -85,39 +75,18 @@ export async function getSubmission(
   planId: string,
   userId: string
 ): Promise<Submission | null> {
-  try {
-    const submissionsRef = collection(db, "submissions");
-    const q = query(
-      submissionsRef,
-      where("planId", "==", planId),
-      where("userId", "==", userId)
-    );
-    const querySnapshot = await getDocs(q);
+  const submission = await db.query.submissions.findFirst({
+    where: and(eq(submissions.planId, planId), eq(submissions.userId, userId)),
+  });
 
-    if (querySnapshot.empty) {
-      return null;
-    }
-
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-
-    return {
-      submissionId: doc.id,
-      planId: data.planId,
-      studyId: data.studyId,
-      userId: data.userId,
-      dayNumber: data.dayNumber,
-      answers: data.answers,
-      reflection: data.reflection,
-      isCompleted: data.isCompleted,
-      submittedAt: data.submittedAt?.toDate() || new Date(),
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
-    };
-  } catch (error) {
-    console.error("Error getting submission:", error);
-    throw error;
+  if (!submission) {
+    return null;
   }
+
+  return {
+    ...submission,
+    answers: submission.answers as unknown as SubmissionAnswer[],
+  } as Submission;
 }
 
 /**
@@ -127,83 +96,30 @@ export async function getUserSubmissions(
   studyId: string,
   userId: string
 ): Promise<Submission[]> {
-  try {
-    const submissionsRef = collection(db, "submissions");
-    // Removed orderBy to avoid requiring composite index
-    // Will sort in memory instead
-    const q = query(
-      submissionsRef,
-      where("studyId", "==", studyId),
-      where("userId", "==", userId)
-    );
-    const querySnapshot = await getDocs(q);
+  const userSubmissions = await db.query.submissions.findMany({
+    where: and(eq(submissions.studyId, studyId), eq(submissions.userId, userId)),
+    orderBy: (submissions, { asc }) => [asc(submissions.dayNumber)],
+  });
 
-    const submissions: Submission[] = [];
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      submissions.push({
-        submissionId: doc.id,
-        planId: data.planId,
-        studyId: data.studyId,
-        userId: data.userId,
-        dayNumber: data.dayNumber,
-        answers: data.answers,
-        reflection: data.reflection,
-        isCompleted: data.isCompleted,
-        submittedAt: data.submittedAt?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      });
-    });
-
-    // Sort by dayNumber in memory
-    submissions.sort((a, b) => a.dayNumber - b.dayNumber);
-
-    return submissions;
-  } catch (error) {
-    console.error("Error getting user submissions:", error);
-    throw error;
-  }
+  return userSubmissions.map((submission) => ({
+    ...submission,
+    answers: submission.answers as unknown as SubmissionAnswer[],
+  })) as Submission[];
 }
 
 /**
  * Get all submissions for a specific day plan
  */
 export async function getDaySubmissions(planId: string): Promise<Submission[]> {
-  try {
-    const submissionsRef = collection(db, "submissions");
-    const q = query(
-      submissionsRef,
-      where("planId", "==", planId),
-      orderBy("submittedAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
+  const daySubmissions = await db.query.submissions.findMany({
+    where: eq(submissions.planId, planId),
+    orderBy: (submissions, { desc }) => [desc(submissions.submittedAt)],
+  });
 
-    const submissions: Submission[] = [];
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      submissions.push({
-        submissionId: doc.id,
-        planId: data.planId,
-        studyId: data.studyId,
-        userId: data.userId,
-        dayNumber: data.dayNumber,
-        answers: data.answers,
-        reflection: data.reflection,
-        isCompleted: data.isCompleted,
-        submittedAt: data.submittedAt?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      });
-    });
-
-    return submissions;
-  } catch (error) {
-    console.error("Error getting day submissions:", error);
-    throw error;
-  }
+  return daySubmissions.map((submission) => ({
+    ...submission,
+    answers: submission.answers as unknown as SubmissionAnswer[],
+  })) as Submission[];
 }
 
 /**
@@ -215,102 +131,59 @@ export async function createComment(
   userId: string,
   content: string
 ): Promise<string> {
-  try {
-    const commentRef = doc(collection(db, "comments"));
-    const commentId = commentRef.id;
+  const commentId = nanoid();
 
-    const comment: Omit<Comment, "commentId"> = {
-      submissionId,
-      studyId,
-      userId,
-      content,
-      createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any,
-    };
+  await db.insert(comments).values({
+    id: commentId,
+    submissionId,
+    studyId,
+    userId,
+    content,
+  });
 
-    await setDoc(commentRef, comment);
-
-    return commentId;
-  } catch (error) {
-    console.error("Error creating comment:", error);
-    throw error;
-  }
+  return commentId;
 }
 
 /**
  * Get comments for a submission
+ * Filters out soft-deleted comments
  */
 export async function getComments(submissionId: string): Promise<Comment[]> {
-  try {
-    const commentsRef = collection(db, "comments");
-    // Removed orderBy to avoid requiring composite index
-    // Will sort in memory instead
-    const q = query(commentsRef, where("submissionId", "==", submissionId));
-    const querySnapshot = await getDocs(q);
+  const submissionComments = await db.query.comments.findMany({
+    where: and(
+      eq(comments.submissionId, submissionId),
+      eq(comments.isDeleted, false)
+    ),
+    orderBy: (comments, { asc }) => [asc(comments.createdAt)],
+  });
 
-    const comments: Comment[] = [];
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // Skip deleted comments
-      if (data.isDeleted) return;
-
-      comments.push({
-        commentId: doc.id,
-        submissionId: data.submissionId,
-        studyId: data.studyId,
-        userId: data.userId,
-        content: data.content,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        isDeleted: data.isDeleted || false,
-      });
-    });
-
-    // Sort by createdAt in memory (ascending - oldest first)
-    comments.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-    return comments;
-  } catch (error) {
-    console.error("Error getting comments:", error);
-    throw error;
-  }
+  return submissionComments;
 }
 
 /**
  * Update comment
  */
-export async function updateComment(
-  commentId: string,
-  content: string
-): Promise<void> {
-  try {
-    const commentRef = doc(db, "comments", commentId);
-    await updateDoc(commentRef, {
+export async function updateComment(commentId: string, content: string): Promise<void> {
+  await db
+    .update(comments)
+    .set({
       content,
-      updatedAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error("Error updating comment:", error);
-    throw error;
-  }
+      updatedAt: new Date(),
+    })
+    .where(eq(comments.id, commentId));
 }
 
 /**
- * Delete comment
+ * Delete comment (soft delete)
  */
 export async function deleteComment(commentId: string): Promise<void> {
-  try {
-    const commentRef = doc(db, "comments", commentId);
-    await updateDoc(commentRef, {
+  await db
+    .update(comments)
+    .set({
       isDeleted: true,
-      updatedAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error("Error deleting comment:", error);
-    throw error;
-  }
+      updatedAt: new Date(),
+    })
+    .where(eq(comments.id, commentId));
 }
 
 /**
@@ -320,36 +193,27 @@ export async function updateProgressRate(
   studyId: string,
   userId: string
 ): Promise<number> {
-  try {
-    // Get total submissions for this user in this study
-    const submissions = await getUserSubmissions(studyId, userId);
-    const completedSubmissions = submissions.filter(
-      (s) => s.isCompleted
-    ).length;
+  // Get total completed submissions for this user in this study
+  const userSubmissions = await getUserSubmissions(studyId, userId);
+  const completedSubmissions = userSubmissions.filter((s) => s.isCompleted).length;
 
-    // Calculate progress rate (out of 15 days)
-    const progressRate = Math.round((completedSubmissions / 15) * 100);
+  // Calculate progress rate (out of 15 days)
+  const progressRate = Math.round((completedSubmissions / 15) * 100);
 
-    // Update studyMember progressRate
-    const membersRef = collection(db, "studyMembers");
-    const q = query(
-      membersRef,
-      where("studyId", "==", studyId),
-      where("userId", "==", userId)
-    );
-    const memberSnapshot = await getDocs(q);
+  // Update studyMember progressRate
+  const member = await db.query.studyMembers.findFirst({
+    where: and(
+      eq(studyMembers.studyId, studyId),
+      eq(studyMembers.userId, userId)
+    ),
+  });
 
-    if (!memberSnapshot.empty) {
-      const memberDoc = memberSnapshot.docs[0];
-      const memberRef = doc(db, "studyMembers", memberDoc.id);
-      await updateDoc(memberRef, {
-        progressRate,
-      });
-    }
-
-    return progressRate;
-  } catch (error) {
-    console.error("Error updating progress rate:", error);
-    throw error;
+  if (member) {
+    await db
+      .update(studyMembers)
+      .set({ progressRate })
+      .where(eq(studyMembers.id, member.id));
   }
+
+  return progressRate;
 }

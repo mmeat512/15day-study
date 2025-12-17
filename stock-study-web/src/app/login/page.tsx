@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../../lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
@@ -11,7 +9,6 @@ import { Input } from "../../components/ui/input";
 import { Loader2 } from "lucide-react";
 
 import { useAuth } from "../../contexts/AuthContext";
-import { useEffect } from "react";
 
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
@@ -35,43 +32,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      let emailToUse = username;
+      const result = await signIn("credentials", {
+        usernameOrEmail: username,
+        password: password,
+        redirect: false,
+      });
 
-      // Check if input is an email
-      const isEmail = username.includes("@");
-
-      if (!isEmail) {
-        // If not email, lookup email by username
-        const q = query(
-          collection(db, "users"),
-          where("username", "==", username)
-        );
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          throw new Error("User not found.");
-        }
-
-        const userDoc = querySnapshot.docs[0];
-        emailToUse = userDoc.data().email;
+      if (result?.error) {
+        setError("Invalid credentials. Please check your username/email and password.");
+      } else if (result?.ok) {
+        router.push("/dashboard");
       }
-
-      await signInWithEmailAndPassword(auth, emailToUse, password);
-      router.push("/dashboard");
     } catch (err: any) {
       console.error("Login error:", err);
-      // Improve error message based on error code
-      if (err.message === "User not found.") {
-        setError("User not found. Please check your username.");
-      } else if (err.code === "auth/invalid-credential") {
-        setError("Invalid credentials. Please check your password.");
-      } else if (err.code === "auth/user-not-found") {
-        setError("User not found. Please check your email/username.");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Invalid password.");
-      } else {
-        setError("Failed to login. Please check your credentials.");
-      }
+      setError("Failed to login. Please try again.");
     } finally {
       setLoading(false);
     }

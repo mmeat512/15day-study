@@ -7,7 +7,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { joinStudy } from "../../../services/studyService";
+import { joinStudyAction } from "../../../actions/studyActions";
 
 export default function JoinStudyPage() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function JoinStudyPage() {
     setLoading(true);
 
     try {
-      const studyId = await joinStudy(
+      const studyId = await joinStudyAction(
         inviteCode.trim().toUpperCase(),
         user.uid
       );
