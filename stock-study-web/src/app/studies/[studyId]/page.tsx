@@ -1,22 +1,37 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import ProtectedRoute from "../../../components/ProtectedRoute";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Progress } from "../../../components/ui/progress";
-import { Loader2, ArrowLeft, Users, BookOpen, Calendar, CheckCircle, Circle } from "lucide-react";
-import { Study, StudyMember, DayPlan } from "../../../types/study";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import ProtectedRoute from '../../../components/ProtectedRoute';
+import { Button } from '../../../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../../components/ui/card';
+import { Progress } from '../../../components/ui/progress';
+import {
+  Loader2,
+  ArrowLeft,
+  Users,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  Circle,
+  LogOut,
+} from 'lucide-react';
+import { Study, StudyMember, DayPlan } from '../../../types/study';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
   getStudyByIdAction,
   getStudyMembersAction,
   getDayPlansAction,
   getUserStudyMemberAction,
-} from "../../../actions/studyActions";
-import { getUserSubmissionsAction } from "../../../actions/submissionActions";
-import Link from "next/link";
+  leaveStudyAction,
+} from '../../../actions/studyActions';
+import { getUserSubmissionsAction } from '../../../actions/submissionActions';
+import Link from 'next/link';
 
 export default function StudyDetailPage() {
   const params = useParams();
@@ -28,6 +43,8 @@ export default function StudyDetailPage() {
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set());
   const [userProgress, setUserProgress] = useState(0);
+  const [userMember, setUserMember] = useState<StudyMember | null>(null);
+  const [leaving, setLeaving] = useState(false);
 
   const studyId = params.studyId as string;
 
@@ -41,7 +58,7 @@ export default function StudyDetailPage() {
         // Get study details
         const studyData = await getStudyByIdAction(studyId);
         if (!studyData) {
-          console.error("Study not found");
+          console.error('Study not found');
           return;
         }
         setStudy(studyData);
@@ -57,7 +74,7 @@ export default function StudyDetailPage() {
         // Get user's submissions to check completed days
         const submissions = await getUserSubmissionsAction(studyId, user.uid);
         const completed = new Set(
-          submissions.filter((s) => s.isCompleted).map((s) => s.dayNumber)
+          submissions.filter(s => s.isCompleted).map(s => s.dayNumber),
         );
         setCompletedDays(completed);
 
@@ -65,9 +82,10 @@ export default function StudyDetailPage() {
         const memberInfo = await getUserStudyMemberAction(studyId, user.uid);
         if (memberInfo) {
           setUserProgress(memberInfo.progressRate || 0);
+          setUserMember(memberInfo);
         }
       } catch (error) {
-        console.error("Error loading study details:", error);
+        console.error('Error loading study details:', error);
       } finally {
         setLoading(false);
       }
@@ -75,6 +93,30 @@ export default function StudyDetailPage() {
 
     loadStudyDetails();
   }, [studyId, user]);
+
+  async function handleLeaveStudy() {
+    if (!user?.uid || !study) return;
+
+    if (
+      !confirm(
+        `Are you sure you want to leave "${study.studyName}"? This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLeaving(true);
+      await leaveStudyAction(studyId, user.uid);
+      alert('You have successfully left the study.');
+      router.push('/studies');
+    } catch (error: any) {
+      console.error('Error leaving study:', error);
+      alert(error.message || 'Failed to leave study. Please try again.');
+    } finally {
+      setLeaving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -96,9 +138,10 @@ export default function StudyDetailPage() {
                 Study Not Found
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
-                The study you're looking for doesn't exist or you don't have access to it.
+                The study you're looking for doesn't exist or you don't have
+                access to it.
               </p>
-              <Button onClick={() => router.push("/dashboard")}>
+              <Button onClick={() => router.push('/dashboard')}>
                 Back to Dashboard
               </Button>
             </div>
@@ -114,11 +157,7 @@ export default function StudyDetailPage() {
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-            >
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex-1">
@@ -126,9 +165,23 @@ export default function StudyDetailPage() {
                 {study.studyName}
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {study.description || "No description available"}
+                {study.description || 'No description available'}
               </p>
             </div>
+            {userMember && userMember.role !== 'owner' && (
+              <Button
+                variant="destructive"
+                onClick={handleLeaveStudy}
+                disabled={leaving}
+              >
+                {leaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="mr-2 h-4 w-4" />
+                )}
+                Leave Study
+              </Button>
+            )}
           </div>
 
           {/* Study Info Cards */}
@@ -143,19 +196,25 @@ export default function StudyDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Book</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Book
+                  </p>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {study.bookTitle}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Status
+                  </p>
                   <p className="font-medium text-gray-900 dark:text-white capitalize">
                     {study.status}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Invite Code</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Invite Code
+                  </p>
                   <p className="font-mono font-bold text-blue-600 dark:text-blue-400">
                     {study.inviteCode}
                   </p>
@@ -173,20 +232,28 @@ export default function StudyDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Start Date</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Start Date
+                  </p>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {study.startDate.toLocaleDateString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">End Date</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    End Date
+                  </p>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {study.endDate.toLocaleDateString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Days</p>
-                  <p className="font-medium text-gray-900 dark:text-white">15 Days</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Total Days
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    15 Days
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -202,7 +269,9 @@ export default function StudyDetailPage() {
               <CardContent className="space-y-3">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-500 dark:text-gray-400">Completion</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Completion
+                    </span>
                     <span className="font-bold text-gray-900 dark:text-white">
                       {userProgress}%
                     </span>
@@ -210,7 +279,9 @@ export default function StudyDetailPage() {
                   <Progress value={userProgress} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Completed Days</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Completed Days
+                  </p>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {completedDays.size} / 15
                   </p>
@@ -229,17 +300,17 @@ export default function StudyDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {members.map((member) => (
+                {members.map(member => (
                   <div
                     key={member.id}
                     className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
                   >
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                      {member.user?.username?.[0]?.toUpperCase() || "?"}
+                      {member.user?.username?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {member.user?.username || "Unknown"}
+                        {member.user?.username || 'Unknown'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                         {member.role}
@@ -261,7 +332,7 @@ export default function StudyDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {dayPlans.map((dayPlan) => {
+                {dayPlans.map(dayPlan => {
                   const isCompleted = completedDays.has(dayPlan.dayNumber);
 
                   return (
@@ -274,8 +345,8 @@ export default function StudyDetailPage() {
                           p-4 rounded-lg border transition-all cursor-pointer
                           ${
                             isCompleted
-                              ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
-                              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700"
+                              ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
                           }
                         `}
                       >

@@ -27,6 +27,7 @@ npx vercel login
 이메일 또는 GitHub 계정으로 로그인할 수 있습니다.
 
 **예상 프롬프트:**
+
 ```
 ? Log in to Vercel
   Continue with GitHub
@@ -84,6 +85,7 @@ npx vercel
 ```
 
 **예상 프롬프트:**
+
 ```
 ? Set up and deploy "~/path/to/stock-study-web"? [Y/n] y
 ? Which scope do you want to deploy to? [Your Account]
@@ -109,6 +111,7 @@ npx vercel --prod
 ```
 
 이 명령어는:
+
 - 프로덕션 URL에 배포
 - 프로덕션 환경 변수 사용
 - 최적화된 빌드 생성
@@ -195,6 +198,7 @@ Vercel MCP를 사용해서 현재 배포 상태를 확인해줘
    - Deployments → 최신 배포 선택 → Build Logs
 
 2. **로컬에서 프로덕션 빌드 테스트:**
+
    ```bash
    npm run build
    npm run start
@@ -270,12 +274,14 @@ npx vercel env ls
 ## 🔗 참고 자료
 
 ### 공식 문서
+
 - [Vercel CLI 문서](https://vercel.com/docs/cli)
 - [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
 - [Deploying from CLI](https://vercel.com/docs/cli/deploying-from-cli)
 - [Vercel MCP Documentation](https://vercel.com/docs/mcp)
 
 ### 추가 리소스
+
 - [Deploy MCP servers to Vercel](https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel)
 - [Use Vercel's MCP server](https://vercel.com/docs/mcp/vercel-mcp)
 - [GitHub Actions with Vercel](https://www.freecodecamp.org/news/deploy-to-vercel-with-github-actions/)
@@ -291,6 +297,4 @@ npx vercel env ls
 
 ---
 
-**작성일:** 2025-12-10
-**버전:** 1.0
-**프로젝트:** Stock Study 15-Day Tracker
+**작성일:** 2025-12-10 **버전:** 1.0 **프로젝트:** Stock Study 15-Day Tracker

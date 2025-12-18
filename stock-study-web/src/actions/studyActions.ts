@@ -26,6 +26,10 @@ export async function joinStudyAction(inviteCode: string, userId: string) {
   return studyService.joinStudy(inviteCode, userId);
 }
 
+export async function leaveStudyAction(studyId: string, userId: string) {
+  return studyService.leaveStudy(studyId, userId);
+}
+
 export async function getUserStudiesAction(userId: string): Promise<Study[]> {
   return studyService.getUserStudies(userId);
 }

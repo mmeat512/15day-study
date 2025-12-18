@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db } from '@/lib/db';
 import {
   studies,
   studyMembers,
@@ -9,16 +9,16 @@ import {
   type StudyMember,
   type DayPlan,
   type Assignment,
-} from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { nanoid } from "nanoid";
+} from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 
 /**
  * Generate a random invite code
  */
 function generateInviteCode(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "";
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
   for (let i = 0; i < 8; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -38,23 +38,23 @@ export async function createStudy(
     endDate: Date;
     maxMembers: number;
   },
-  ownerId: string
+  ownerId: string,
 ): Promise<{ studyId: string; inviteCode: string }> {
   const inviteCode = generateInviteCode();
   const studyId = nanoid();
 
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     // 1. Create study
     await tx.insert(studies).values({
       id: studyId,
       studyName: studyData.studyName,
-      description: studyData.description || "",
+      description: studyData.description || '',
       bookTitle: studyData.bookTitle,
       inviteCode: inviteCode,
       startDate: studyData.startDate,
       endDate: studyData.endDate,
       ownerId: ownerId,
-      status: "active",
+      status: 'active',
       maxMembers: studyData.maxMembers,
     });
 
@@ -63,14 +63,17 @@ export async function createStudy(
       id: nanoid(),
       studyId: studyId,
       userId: ownerId,
-      role: "owner",
+      role: 'owner',
       isActive: true,
       progressRate: 0,
     });
 
     // 3. Create 15 day plans
     const dayPlanData = getDayPlanTemplates(studyId);
-    const insertedPlans = await tx.insert(dayPlans).values(dayPlanData).returning();
+    const insertedPlans = await tx
+      .insert(dayPlans)
+      .values(dayPlanData)
+      .returning();
 
     // 4. Create 3 assignments for each day plan (45 total)
     const assignmentData: Array<typeof assignments.$inferInsert> = [];
@@ -86,101 +89,109 @@ export async function createStudy(
 /**
  * Get day plan templates for a study
  */
-function getDayPlanTemplates(studyId: string): Array<typeof dayPlans.$inferInsert> {
+function getDayPlanTemplates(
+  studyId: string,
+): Array<typeof dayPlans.$inferInsert> {
   const dayPlanTemplates = [
     {
       dayNumber: 1,
-      title: "Introduction to Stock Market",
-      learningGoal: "Understand the basic concepts of stock market and investing",
-      chapterInfo: "Chapter 1",
+      title: 'Introduction to Stock Market',
+      learningGoal:
+        'Understand the basic concepts of stock market and investing',
+      chapterInfo: 'Chapter 1',
     },
     {
       dayNumber: 2,
-      title: "Types of Stocks",
-      learningGoal: "Learn about different types of stocks and their characteristics",
-      chapterInfo: "Chapter 2",
+      title: 'Types of Stocks',
+      learningGoal:
+        'Learn about different types of stocks and their characteristics',
+      chapterInfo: 'Chapter 2',
     },
     {
       dayNumber: 3,
-      title: "Reading Stock Charts",
-      learningGoal: "Master the basics of reading and interpreting stock charts",
-      chapterInfo: "Chapter 3",
+      title: 'Reading Stock Charts',
+      learningGoal:
+        'Master the basics of reading and interpreting stock charts',
+      chapterInfo: 'Chapter 3',
     },
     {
       dayNumber: 4,
-      title: "Market Analysis Fundamentals",
-      learningGoal: "Learn fundamental analysis techniques",
-      chapterInfo: "Chapter 4",
+      title: 'Market Analysis Fundamentals',
+      learningGoal: 'Learn fundamental analysis techniques',
+      chapterInfo: 'Chapter 4',
     },
     {
       dayNumber: 5,
-      title: "Financial Statements Analysis",
-      learningGoal: "Understand balance sheets, income statements, and cash flow",
-      chapterInfo: "Chapter 5",
+      title: 'Financial Statements Analysis',
+      learningGoal:
+        'Understand balance sheets, income statements, and cash flow',
+      chapterInfo: 'Chapter 5',
     },
     {
       dayNumber: 6,
-      title: "Technical Indicators",
-      learningGoal: "Learn about key technical indicators and their usage",
-      chapterInfo: "Chapter 6",
+      title: 'Technical Indicators',
+      learningGoal: 'Learn about key technical indicators and their usage',
+      chapterInfo: 'Chapter 6',
     },
     {
       dayNumber: 7,
-      title: "Risk Management",
-      learningGoal: "Understand risk management strategies in stock investing",
-      chapterInfo: "Chapter 7",
+      title: 'Risk Management',
+      learningGoal: 'Understand risk management strategies in stock investing',
+      chapterInfo: 'Chapter 7',
     },
     {
       dayNumber: 8,
-      title: "Portfolio Diversification",
-      learningGoal: "Learn how to build a diversified investment portfolio",
-      chapterInfo: "Chapter 8",
+      title: 'Portfolio Diversification',
+      learningGoal: 'Learn how to build a diversified investment portfolio',
+      chapterInfo: 'Chapter 8',
     },
     {
       dayNumber: 9,
-      title: "Market Trends and Cycles",
-      learningGoal: "Understand market cycles and trend analysis",
-      chapterInfo: "Chapter 9",
+      title: 'Market Trends and Cycles',
+      learningGoal: 'Understand market cycles and trend analysis',
+      chapterInfo: 'Chapter 9',
     },
     {
       dayNumber: 10,
-      title: "Investment Strategies",
-      learningGoal: "Explore different investment strategies and when to use them",
-      chapterInfo: "Chapter 10",
+      title: 'Investment Strategies',
+      learningGoal:
+        'Explore different investment strategies and when to use them',
+      chapterInfo: 'Chapter 10',
     },
     {
       dayNumber: 11,
-      title: "Trading Psychology",
-      learningGoal: "Learn about emotional control and trading discipline",
-      chapterInfo: "Chapter 11",
+      title: 'Trading Psychology',
+      learningGoal: 'Learn about emotional control and trading discipline',
+      chapterInfo: 'Chapter 11',
     },
     {
       dayNumber: 12,
-      title: "Value Investing",
-      learningGoal: "Understand value investing principles and techniques",
-      chapterInfo: "Chapter 12",
+      title: 'Value Investing',
+      learningGoal: 'Understand value investing principles and techniques',
+      chapterInfo: 'Chapter 12',
     },
     {
       dayNumber: 13,
-      title: "Growth Investing",
-      learningGoal: "Learn about growth stock identification and analysis",
-      chapterInfo: "Chapter 13",
+      title: 'Growth Investing',
+      learningGoal: 'Learn about growth stock identification and analysis',
+      chapterInfo: 'Chapter 13',
     },
     {
       dayNumber: 14,
-      title: "Market News and Information",
-      learningGoal: "Learn how to interpret market news and use information effectively",
-      chapterInfo: "Chapter 14",
+      title: 'Market News and Information',
+      learningGoal:
+        'Learn how to interpret market news and use information effectively',
+      chapterInfo: 'Chapter 14',
     },
     {
       dayNumber: 15,
-      title: "Building Your Investment Plan",
-      learningGoal: "Create a personalized investment plan and strategy",
-      chapterInfo: "Chapter 15",
+      title: 'Building Your Investment Plan',
+      learningGoal: 'Create a personalized investment plan and strategy',
+      chapterInfo: 'Chapter 15',
     },
   ];
 
-  return dayPlanTemplates.map((template) => ({
+  return dayPlanTemplates.map(template => ({
     id: nanoid(),
     studyId: studyId,
     dayNumber: template.dayNumber,
@@ -195,26 +206,29 @@ function getDayPlanTemplates(studyId: string): Array<typeof dayPlans.$inferInser
 /**
  * Get assignment templates for a day plan
  */
-function getAssignmentTemplates(planId: string): Array<typeof assignments.$inferInsert> {
+function getAssignmentTemplates(
+  planId: string,
+): Array<typeof assignments.$inferInsert> {
   return [
     {
       id: nanoid(),
       planId: planId,
-      questionText: "What are the key concepts you learned today?",
+      questionText: 'What are the key concepts you learned today?',
       questionOrder: 1,
       isRequired: true,
     },
     {
       id: nanoid(),
       planId: planId,
-      questionText: "How can you apply today's learning to your investment strategy?",
+      questionText:
+        "How can you apply today's learning to your investment strategy?",
       questionOrder: 2,
       isRequired: true,
     },
     {
       id: nanoid(),
       planId: planId,
-      questionText: "What questions or uncertainties do you still have?",
+      questionText: 'What questions or uncertainties do you still have?',
       questionOrder: 3,
       isRequired: false,
     },
@@ -224,23 +238,29 @@ function getAssignmentTemplates(planId: string): Array<typeof assignments.$infer
 /**
  * Join a study using invite code
  */
-export async function joinStudy(inviteCode: string, userId: string): Promise<string> {
+export async function joinStudy(
+  inviteCode: string,
+  userId: string,
+): Promise<string> {
   // Find study by invite code
   const study = await db.query.studies.findFirst({
     where: eq(studies.inviteCode, inviteCode),
   });
 
   if (!study) {
-    throw new Error("Invalid invite code");
+    throw new Error('Invalid invite code');
   }
 
   // Check if user is already a member
   const existingMember = await db.query.studyMembers.findFirst({
-    where: and(eq(studyMembers.studyId, study.id), eq(studyMembers.userId, userId)),
+    where: and(
+      eq(studyMembers.studyId, study.id),
+      eq(studyMembers.userId, userId),
+    ),
   });
 
   if (existingMember) {
-    throw new Error("You are already a member of this study");
+    throw new Error('You are already a member of this study');
   }
 
   // Check if study is full
@@ -249,7 +269,7 @@ export async function joinStudy(inviteCode: string, userId: string): Promise<str
   });
 
   if (allMembers.length >= study.maxMembers) {
-    throw new Error("This study has reached its maximum capacity");
+    throw new Error('This study has reached its maximum capacity');
   }
 
   // Add user as member
@@ -257,7 +277,7 @@ export async function joinStudy(inviteCode: string, userId: string): Promise<str
     id: nanoid(),
     studyId: study.id,
     userId: userId,
-    role: "member",
+    role: 'member',
     isActive: true,
     progressRate: 0,
   });
@@ -266,17 +286,58 @@ export async function joinStudy(inviteCode: string, userId: string): Promise<str
 }
 
 /**
- * Get user's studies
+ * Leave a study (soft delete - set isActive to false)
  */
-export async function getUserStudies(userId: string): Promise<Study[]> {
-  const members = await db.query.studyMembers.findMany({
-    where: and(eq(studyMembers.userId, userId), eq(studyMembers.isActive, true)),
+export async function leaveStudy(
+  studyId: string,
+  userId: string,
+): Promise<void> {
+  // Get the study member
+  const member = await db.query.studyMembers.findFirst({
+    where: and(
+      eq(studyMembers.studyId, studyId),
+      eq(studyMembers.userId, userId),
+    ),
     with: {
       study: true,
     },
   });
 
-  return members.map((member) => member.study);
+  if (!member) {
+    throw new Error('You are not a member of this study');
+  }
+
+  // Prevent owner from leaving (owner must transfer ownership or delete study)
+  if (member.role === 'owner') {
+    throw new Error(
+      'Study owner cannot leave. Please delete the study or transfer ownership first.',
+    );
+  }
+
+  // Soft delete: set isActive to false instead of deleting the record
+  await db
+    .update(studyMembers)
+    .set({ isActive: false })
+    .where(
+      and(eq(studyMembers.studyId, studyId), eq(studyMembers.userId, userId)),
+    );
+}
+
+/**
+ * Get user's studies
+ */
+export async function getUserStudies(userId: string): Promise<Study[]> {
+  const members = await db.query.studyMembers.findMany({
+    where: and(
+      eq(studyMembers.userId, userId),
+      eq(studyMembers.isActive, true),
+    ),
+    with: {
+      study: true,
+    },
+  });
+
+  return members.map(member => member.study);
 }
 
 /**
@@ -319,10 +380,13 @@ export async function getAssignments(planId: string): Promise<Assignment[]> {
  */
 export async function getUserStudyMember(
   userId: string,
-  studyId: string
+  studyId: string,
 ): Promise<StudyMember | null> {
   const member = await db.query.studyMembers.findFirst({
-    where: and(eq(studyMembers.userId, userId), eq(studyMembers.studyId, studyId)),
+    where: and(
+      eq(studyMembers.userId, userId),
+      eq(studyMembers.studyId, studyId),
+    ),
   });
 
   return member || null;
@@ -345,7 +409,7 @@ export function getCurrentDayNumber(startDate: Date): number {
  * Get study with member count
  */
 export async function getStudyWithMemberCount(
-  studyId: string
+  studyId: string,
 ): Promise<{ study: Study; memberCount: number } | null> {
   const study = await getStudy(studyId);
   if (!study) {
@@ -365,9 +429,7 @@ export async function getStudyWithMemberCount(
 /**
  * Get user's studies with progress info
  */
-export async function getUserStudiesWithProgress(
-  userId: string
-): Promise<
+export async function getUserStudiesWithProgress(userId: string): Promise<
   Array<{
     study: Study;
     memberInfo: StudyMember;
@@ -376,14 +438,17 @@ export async function getUserStudiesWithProgress(
   }>
 > {
   const members = await db.query.studyMembers.findMany({
-    where: and(eq(studyMembers.userId, userId), eq(studyMembers.isActive, true)),
+    where: and(
+      eq(studyMembers.userId, userId),
+      eq(studyMembers.isActive, true),
+    ),
     with: {
       study: true,
     },
   });
 
   const result = await Promise.all(
-    members.map(async (member) => {
+    members.map(async member => {
       const allMembers = await db.query.studyMembers.findMany({
         where: eq(studyMembers.studyId, member.studyId),
       });
@@ -396,7 +461,7 @@ export async function getUserStudiesWithProgress(
         currentDay,
         memberCount: allMembers.length,
       };
-    })
+    }),
   );
 
   return result;
@@ -414,7 +479,10 @@ export async function getStudyById(studyId: string): Promise<Study | null> {
  */
 export async function getStudyMembers(studyId: string): Promise<StudyMember[]> {
   const members = await db.query.studyMembers.findMany({
-    where: and(eq(studyMembers.studyId, studyId), eq(studyMembers.isActive, true)),
+    where: and(
+      eq(studyMembers.studyId, studyId),
+      eq(studyMembers.isActive, true),
+    ),
     with: {
       user: true,
     },
