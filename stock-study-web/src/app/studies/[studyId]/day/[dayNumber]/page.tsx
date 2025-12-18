@@ -21,6 +21,7 @@ import {
   getSubmissionAction,
   getDaySubmissionsAction,
   updateProgressRateAction,
+  getCommentsAction,
 } from "../../../../../actions/submissionActions";
 import { useAuth } from "../../../../../contexts/AuthContext";
 
@@ -39,6 +40,8 @@ export default function DayDetailPage() {
   const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
   const [studyMembers, setStudyMembers] = useState<StudyMember[]>([]);
   const [showAllSubmissions, setShowAllSubmissions] = useState(false);
+  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
+  const [commentCounts, setCommentCounts] = useState<{ [key: string]: number }>({});
 
   const studyId = params.studyId as string;
   const dayNumber = parseInt(params.dayNumber as string);
@@ -95,6 +98,14 @@ export default function DayDetailPage() {
         // Load study members to display names
         const members = await getStudyMembersAction(studyId);
         setStudyMembers(members);
+
+        // Load comment counts for all submissions
+        const counts: { [key: string]: number } = {};
+        for (const submission of daySubmissions) {
+          const comments = await getCommentsAction(submission.id);
+          counts[submission.id] = comments.length;
+        }
+        setCommentCounts(counts);
       } catch (error) {
         console.error("Error loading day data:", error);
       } finally {
@@ -162,6 +173,18 @@ export default function DayDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleSubmissionExpand = (submissionId: string) => {
+    setExpandedSubmissions((prev) => {
+      const next = new Set(prev);
+      if (next.has(submissionId)) {
+        next.delete(submissionId);
+      } else {
+        next.add(submissionId);
+      }
+      return next;
+    });
   };
 
   if (loading) {
@@ -357,53 +380,85 @@ export default function DayDetailPage() {
                   allSubmissions.map((submission) => {
                     const member = studyMembers.find(m => m.userId === submission.userId);
                     const submissionAnswers = submission.answers as SubmissionAnswer[];
+                    const isExpanded = expandedSubmissions.has(submission.id);
+                    const commentCount = commentCounts[submission.id] || 0;
 
                     return (
                       <div
                         key={submission.id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 bg-gray-50 dark:bg-gray-800/50"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 overflow-hidden"
                       >
-                        {/* Member Info */}
-                        <Link
-                          href={`/studies/${studyId}/members/${submission.userId}`}
-                          className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity"
+                        {/* Member Info Header - Clickable to expand/collapse */}
+                        <div
+                          className="flex items-center gap-3 p-5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                          onClick={() => toggleSubmissionExpand(submission.id)}
                         >
                           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                             {member?.user?.username?.[0]?.toUpperCase() || '?'}
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={`/studies/${studyId}/members/${submission.userId}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                            >
                               {member?.user?.username || 'Anonymous'}
-                            </p>
+                            </Link>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Submitted {submission.submittedAt?.toLocaleDateString()} at {submission.submittedAt?.toLocaleTimeString()}
+                              Submitted {submission.submittedAt?.toLocaleDateString()} • {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
                             </p>
                           </div>
-                        </Link>
-
-                        {/* Answers */}
-                        <div className="space-y-4">
-                          {submissionAnswers.map((answer, index) => (
-                            <div key={answer.assignmentId}>
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Q{index + 1}. {answer.questionText}
-                              </p>
-                              <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-blue-500 dark:border-blue-400 whitespace-pre-wrap">
-                                {answer.answerText || <span className="italic text-gray-400">No answer provided</span>}
-                              </p>
-                            </div>
-                          ))}
+                          <Button variant="ghost" size="sm">
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5" />
+                            )}
+                          </Button>
                         </div>
 
-                        {/* Reflection */}
-                        {submission.reflection && (
-                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              📝 Daily Reflection
-                            </p>
-                            <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-green-500 dark:border-green-400 whitespace-pre-wrap">
-                              {submission.reflection}
-                            </p>
+                        {/* Expanded Content */}
+                        {isExpanded && (
+                          <div className="border-t border-gray-200 dark:border-gray-700">
+                            {/* Answers */}
+                            <div className="p-5 space-y-4">
+                              {submissionAnswers.map((answer, index) => (
+                                <div key={answer.assignmentId}>
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Q{index + 1}. {answer.questionText}
+                                  </p>
+                                  <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-blue-500 dark:border-blue-400 whitespace-pre-wrap">
+                                    {answer.answerText || <span className="italic text-gray-400">No answer provided</span>}
+                                  </p>
+                                </div>
+                              ))}
+
+                              {/* Reflection */}
+                              {submission.reflection && (
+                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    📝 Daily Reflection
+                                  </p>
+                                  <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-green-500 dark:border-green-400 whitespace-pre-wrap">
+                                    {submission.reflection}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Comments Section */}
+                            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+                              <CommentsSection
+                                submissionId={submission.id}
+                                studyId={studyId}
+                                onCommentCountChange={(newCount) => {
+                                  setCommentCounts((prev) => ({
+                                    ...prev,
+                                    [submission.id]: newCount,
+                                  }));
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
                       </div>

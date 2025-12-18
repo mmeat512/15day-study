@@ -132,7 +132,171 @@ A dedicated page to view a specific study member's complete learning progress an
 
 ---
 
-**Status**: Planned (Not yet implemented)
+**Status**: ✅ Completed
 **Priority**: Medium
 **Estimated Complexity**: Medium
 **Dependencies**: None (all required services exist)
+
+---
+
+## Comments on All Member Submissions
+
+### Overview
+Add commenting functionality to the "All Member Submissions" section on Day pages, allowing study members to provide feedback and engage in discussions on each other's submissions.
+
+### Current State
+- ✅ Members can view all submissions in "All Member Submissions" section
+- ✅ Each submission shows member info, answers, and reflection
+- ❌ No way to comment on other members' submissions
+- ✅ Comments only work on user's own submission
+
+### Goal
+Enable collaborative learning by allowing members to comment on each other's Day submissions directly from the "All Member Submissions" section.
+
+### Features
+
+#### 1. Submission Card Enhancement
+- **Comment Count Display**
+  - Show comment count badge on each submission card
+  - "👤 Username • 5 comments"
+  - Visual indicator that feedback is available
+
+#### 2. Expandable Submission Details
+- **Two-state display**:
+  - **Collapsed** (default): Member info + comment count
+  - **Expanded**: Full submission + comments section
+- Click to toggle between states
+
+#### 3. Comments Section Integration
+- **Reuse existing CommentsSection component**
+  - Pass `submissionId` of the viewed member's submission
+  - All members can read and write comments
+  - Show comment author, timestamp, content
+  - Edit/delete own comments
+
+#### 4. UI/UX Improvements
+- **Visual hierarchy**:
+  - Submission cards with subtle borders
+  - Expanded state with elevated shadow
+  - Clear visual separation between submissions
+- **Loading states**:
+  - Lazy load comments when expanded
+  - Show loading spinner while fetching
+- **Performance**:
+  - Only load comments for expanded submissions
+  - Optimize re-renders
+
+### Technical Implementation
+
+#### Modified Files
+1. `src/app/studies/[studyId]/day/[dayNumber]/page.tsx`
+   - Add expand/collapse state for each submission
+   - Load comments count for each submission
+   - Integrate CommentsSection for each submission
+
+#### Existing Components to Use
+- `CommentsSection` - Already built, just need to pass different `submissionId`
+- `Button` - For expand/collapse toggle
+
+#### New State Management
+```tsx
+const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
+const [commentCounts, setCommentCounts] = useState<{ [key: string]: number }>({});
+```
+
+#### API Calls Needed
+- Existing: `getCommentsAction(submissionId)` - Get comments for a submission
+- New (optional): `getCommentCountAction(submissionId)` - Get comment count without loading all comments
+
+### Implementation Steps
+
+#### ✅ Step 1: Update Member Submission Card UI
+- [x] Add comment count to member info header
+- [x] Add expand/collapse button
+- [x] Add state management for expanded submissions
+
+#### ✅ Step 2: Implement Expand/Collapse Logic
+- [x] Create toggle function for each submission
+- [x] Show/hide submission details based on state
+- [x] Add smooth transition animation
+
+#### ✅ Step 3: Integrate Comments Section
+- [x] Add CommentsSection component to expanded view
+- [x] Pass correct submissionId to each CommentsSection
+- [x] Test comment CRUD operations
+
+#### ✅ Step 4: Add Comment Count Display
+- [x] Load comment counts on page load
+- [x] Display count in collapsed view
+- [x] Update count after new comment added
+
+#### ✅ Step 5: Polish & Optimize
+- [x] Add loading states
+- [x] Optimize comment loading (lazy load)
+- [x] Improve visual design
+- [x] Test responsive layout
+- [x] Dark mode compatibility
+
+#### ✅ Step 6: Test & Verify
+- [x] Test with multiple members
+- [x] Verify comment notifications work
+- [x] Check permissions (all members can comment)
+- [x] Build and deploy
+
+### UI Design
+
+```
+┌─────────────────────────────────────────────┐
+│ 👥 All Member Submissions (3/5)             │
+│                                [View All ▼] │
+├─────────────────────────────────────────────┤
+│                                             │
+│ Collapsed State:                            │
+│ ┌─────────────────────────────────────┐    │
+│ │ 👤 김철수 • 5 comments       [▼]   │    │
+│ └─────────────────────────────────────┘    │
+│                                             │
+│ Expanded State:                             │
+│ ┌─────────────────────────────────────┐    │
+│ │ 👤 김철수 • 5 comments       [▲]   │    │
+│ ├─────────────────────────────────────┤    │
+│ │ Q1. What are the key concepts?      │    │
+│ │ └─ Answer text here...              │    │
+│ │                                     │    │
+│ │ Q2. How can you apply this?         │    │
+│ │ └─ Answer text here...              │    │
+│ │                                     │    │
+│ │ 📝 Daily Reflection                 │    │
+│ │ └─ Reflection text here...          │    │
+│ ├─────────────────────────────────────┤    │
+│ │ 💬 Comments (5)                     │    │
+│ │ ┌─────────────────────────────┐    │    │
+│ │ │ [Comment input]             │    │    │
+│ │ └─────────────────────────────┘    │    │
+│ │                                     │    │
+│ │ 👤 이영희 • 2 hours ago             │    │
+│ │ Great insights on...                │    │
+│ └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+```
+
+### Benefits
+1. **Enhanced Collaboration**: Members can discuss and learn from each other's answers
+2. **Immediate Feedback**: Get feedback on submissions right away
+3. **Motivation**: Seeing comments encourages participation
+4. **Context**: Comments are tied to specific Day and topic
+5. **Community Building**: Fosters sense of learning together
+
+### Future Enhancements
+- Comment threading (replies to comments)
+- @mentions to notify specific members
+- Like/reaction system for comments
+- Filter comments by member
+- Export discussion as study notes
+
+---
+
+**Status**: ✅ Completed
+**Priority**: High
+**Estimated Complexity**: Medium
+**Dependencies**: Existing CommentsSection component

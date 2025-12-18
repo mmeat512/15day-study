@@ -15,11 +15,13 @@ import { useAuth } from "../../contexts/AuthContext";
 interface CommentsSectionProps {
   submissionId: string;
   studyId: string;
+  onCommentCountChange?: (newCount: number) => void;
 }
 
 export function CommentsSection({
   submissionId,
   studyId,
+  onCommentCountChange,
 }: CommentsSectionProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -54,6 +56,11 @@ export function CommentsSection({
       await createCommentAction(submissionId, studyId, user.uid, newComment.trim());
       setNewComment("");
       await loadComments();
+
+      // Notify parent of comment count change
+      if (onCommentCountChange) {
+        onCommentCountChange(comments.length + 1);
+      }
     } catch (error) {
       console.error("Error posting comment:", error);
       alert("Failed to post comment. Please try again.");
@@ -95,6 +102,11 @@ export function CommentsSection({
       setComments((prevComments) =>
         prevComments.filter((comment) => comment.id !== commentId)
       );
+
+      // Notify parent of comment count change
+      if (onCommentCountChange) {
+        onCommentCountChange(comments.length - 1);
+      }
     } catch (error) {
       console.error("Error deleting comment:", error);
       alert("Failed to delete comment. Please try again.");
