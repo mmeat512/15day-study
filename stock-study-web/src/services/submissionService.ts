@@ -1,18 +1,20 @@
-import { db } from "@/lib/db";
+import { db } from '@/lib/db';
 import {
   submissions,
   comments,
   studyMembers,
   type Submission,
   type Comment,
-} from "@/db/schema";
-import { eq, and, desc} from "drizzle-orm";
-import { nanoid } from "nanoid";
+} from '@/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 
 // Define SubmissionAnswer type to match the existing type
 export type SubmissionAnswer = {
   assignmentId: string;
-  answer: string;
+  questionText: string;
+  answerText: string;
+  isRequired: boolean;
 };
 
 /**
@@ -30,7 +32,7 @@ export async function createSubmission(submissionData: {
   const existingSubmission = await db.query.submissions.findFirst({
     where: and(
       eq(submissions.planId, submissionData.planId),
-      eq(submissions.userId, submissionData.userId)
+      eq(submissions.userId, submissionData.userId),
     ),
   });
 
@@ -73,7 +75,7 @@ export async function createSubmission(submissionData: {
  */
 export async function getSubmission(
   planId: string,
-  userId: string
+  userId: string,
 ): Promise<Submission | null> {
   const submission = await db.query.submissions.findFirst({
     where: and(eq(submissions.planId, planId), eq(submissions.userId, userId)),
@@ -94,14 +96,17 @@ export async function getSubmission(
  */
 export async function getUserSubmissions(
   studyId: string,
-  userId: string
+  userId: string,
 ): Promise<Submission[]> {
   const userSubmissions = await db.query.submissions.findMany({
-    where: and(eq(submissions.studyId, studyId), eq(submissions.userId, userId)),
+    where: and(
+      eq(submissions.studyId, studyId),
+      eq(submissions.userId, userId),
+    ),
     orderBy: (submissions, { asc }) => [asc(submissions.dayNumber)],
   });
 
-  return userSubmissions.map((submission) => ({
+  return userSubmissions.map(submission => ({
     ...submission,
     answers: submission.answers as unknown as SubmissionAnswer[],
   })) as Submission[];
@@ -116,7 +121,7 @@ export async function getDaySubmissions(planId: string): Promise<Submission[]> {
     orderBy: (submissions, { desc }) => [desc(submissions.submittedAt)],
   });
 
-  return daySubmissions.map((submission) => ({
+  return daySubmissions.map(submission => ({
     ...submission,
     answers: submission.answers as unknown as SubmissionAnswer[],
   })) as Submission[];
@@ -129,7 +134,7 @@ export async function createComment(
   submissionId: string,
   studyId: string,
   userId: string,
-  content: string
+  content: string,
 ): Promise<string> {
   const commentId = nanoid();
 
@@ -147,14 +152,18 @@ export async function createComment(
 /**
  * Get comments for a submission
  * Filters out soft-deleted comments
+ * Includes user data for each comment
  */
 export async function getComments(submissionId: string): Promise<Comment[]> {
   const submissionComments = await db.query.comments.findMany({
     where: and(
       eq(comments.submissionId, submissionId),
-      eq(comments.isDeleted, false)
+      eq(comments.isDeleted, false),
     ),
     orderBy: (comments, { asc }) => [asc(comments.createdAt)],
+    with: {
+      user: true,
+    },
   });
 
   return submissionComments;
@@ -163,7 +172,10 @@ export async function getComments(submissionId: string): Promise<Comment[]> {
 /**
  * Update comment
  */
-export async function updateComment(commentId: string, content: string): Promise<void> {
+export async function updateComment(
+  commentId: string,
+  content: string,
+): Promise<void> {
   await db
     .update(comments)
     .set({
@@ -191,11 +203,13 @@ export async function deleteComment(commentId: string): Promise<void> {
  */
 export async function updateProgressRate(
   studyId: string,
-  userId: string
+  userId: string,
 ): Promise<number> {
   // Get total completed submissions for this user in this study
   const userSubmissions = await getUserSubmissions(studyId, userId);
-  const completedSubmissions = userSubmissions.filter((s) => s.isCompleted).length;
+  const completedSubmissions = userSubmissions.filter(
+    s => s.isCompleted,
+  ).length;
 
   // Calculate progress rate (out of 15 days)
   const progressRate = Math.round((completedSubmissions / 15) * 100);
@@ -204,7 +218,7 @@ export async function updateProgressRate(
   const member = await db.query.studyMembers.findFirst({
     where: and(
       eq(studyMembers.studyId, studyId),
-      eq(studyMembers.userId, userId)
+      eq(studyMembers.userId, userId),
     ),
   });
 

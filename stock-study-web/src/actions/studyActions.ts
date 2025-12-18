@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import * as studyService from "@/services/studyService";
-import type { Study, DayPlan, Assignment, StudyMember } from "@/db/schema";
+import * as studyService from '@/services/studyService';
+import type { Study, DayPlan, Assignment, StudyMember } from '@/db/schema';
 
 /**
  * Server Actions for study operations
@@ -17,7 +17,7 @@ export async function createStudyAction(
     endDate: Date;
     maxMembers: number;
   },
-  ownerId: string
+  ownerId: string,
 ) {
   return studyService.createStudy(studyData, ownerId);
 }
@@ -38,13 +38,15 @@ export async function getDayPlansAction(studyId: string): Promise<DayPlan[]> {
   return studyService.getDayPlans(studyId);
 }
 
-export async function getAssignmentsAction(planId: string): Promise<Assignment[]> {
+export async function getAssignmentsAction(
+  planId: string,
+): Promise<Assignment[]> {
   return studyService.getAssignments(planId);
 }
 
 export async function getUserStudyMemberAction(
   userId: string,
-  studyId: string
+  studyId: string,
 ): Promise<StudyMember | null> {
   return studyService.getUserStudyMember(userId, studyId);
 }
@@ -57,13 +59,14 @@ export async function getUserStudiesWithProgressAction(userId: string) {
   return studyService.getUserStudiesWithProgress(userId);
 }
 
-export async function getStudyByIdAction(studyId: string): Promise<Study | null> {
+export async function getStudyByIdAction(
+  studyId: string,
+): Promise<Study | null> {
   return studyService.getStudyById(studyId);
 }
 
-export async function getStudyMembersAction(studyId: string): Promise<StudyMember[]> {
+export async function getStudyMembersAction(
+  studyId: string,
+): Promise<StudyMember[]> {
   return studyService.getStudyMembers(studyId);
 }
-
-// Re-export getCurrentDayNumber as it's a pure utility function
-export { getCurrentDayNumber } from "@/services/studyService";

@@ -60,21 +60,22 @@ export default function DayDetailPage() {
         setDayPlan(currentDayPlan);
 
         // Get assignments for this day
-        const dayAssignments = await getAssignmentsAction(currentDayPlan.planId);
+        const dayAssignments = await getAssignmentsAction(currentDayPlan.id);
         setAssignments(dayAssignments);
 
         // Check if user has already submitted
         const existingSubmission = await getSubmissionAction(
-          currentDayPlan.planId,
+          currentDayPlan.id,
           user.uid
         );
 
         if (existingSubmission) {
           setIsSubmitted(true);
-          setSubmissionId(existingSubmission.submissionId);
+          setSubmissionId(existingSubmission.id);
           // Load existing answers
           const loadedAnswers: { [key: string]: string } = {};
-          existingSubmission.answers.forEach((answer) => {
+          const submissionAnswers = existingSubmission.answers as SubmissionAnswer[];
+          submissionAnswers.forEach((answer) => {
             loadedAnswers[answer.assignmentId] = answer.answerText;
           });
           setAnswers(loadedAnswers);
@@ -99,7 +100,7 @@ export default function DayDetailPage() {
       // Validate required answers
       const requiredAssignments = assignments.filter((a) => a.isRequired);
       const missingAnswers = requiredAssignments.filter(
-        (a) => !answers[a.assignmentId] || answers[a.assignmentId].trim() === ""
+        (a) => !answers[a.id] || answers[a.id].trim() === ""
       );
 
       if (missingAnswers.length > 0) {
@@ -110,15 +111,15 @@ export default function DayDetailPage() {
 
       // Prepare submission answers
       const submissionAnswers: SubmissionAnswer[] = assignments.map((assignment) => ({
-        assignmentId: assignment.assignmentId,
+        assignmentId: assignment.id,
         questionText: assignment.questionText,
-        answerText: answers[assignment.assignmentId] || "",
+        answerText: answers[assignment.id] || "",
         isRequired: assignment.isRequired,
       }));
 
       // Create submission
       const newSubmissionId = await createSubmissionAction({
-        planId: dayPlan.planId,
+        planId: dayPlan.id,
         studyId: studyId,
         userId: user.uid,
         dayNumber: dayNumber,
@@ -187,7 +188,7 @@ export default function DayDetailPage() {
           <DayHeader
             dayNumber={dayPlan.dayNumber}
             title={dayPlan.title}
-            chapterInfo={dayPlan.chapterInfo}
+            chapterInfo={dayPlan.chapterInfo ?? undefined}
             isCompleted={false}
           />
 
@@ -215,7 +216,7 @@ export default function DayDetailPage() {
             <div className="space-y-4">
               {assignments.map((assignment, index) => (
                 <div
-                  key={assignment.assignmentId}
+                  key={assignment.id}
                   className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-100 dark:border-gray-700"
                 >
                   <div className="flex items-start gap-2 mb-3">
@@ -237,11 +238,11 @@ export default function DayDetailPage() {
                     </div>
                   </div>
                   <textarea
-                    value={answers[assignment.assignmentId] || ""}
+                    value={answers[assignment.id] || ""}
                     onChange={(e) =>
                       setAnswers({
                         ...answers,
-                        [assignment.assignmentId]: e.target.value,
+                        [assignment.id]: e.target.value,
                       })
                     }
                     placeholder="Write your answer here..."

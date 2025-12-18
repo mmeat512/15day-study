@@ -231,7 +231,7 @@ export default function StudyDetailPage() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {members.map((member) => (
                   <div
-                    key={member.memberId}
+                    key={member.id}
                     className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
                   >
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
@@ -266,7 +266,7 @@ export default function StudyDetailPage() {
 
                   return (
                     <Link
-                      key={dayPlan.planId}
+                      key={dayPlan.id}
                       href={`/studies/${studyId}/day/${dayPlan.dayNumber}`}
                     >
                       <div

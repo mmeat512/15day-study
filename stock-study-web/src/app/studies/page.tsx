@@ -121,7 +121,7 @@ export default function StudyListPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {studies.map(({ study, currentDay, progress, memberCount }) => (
-                <Card key={study.studyId} className="flex flex-col">
+                <Card key={study.id} className="flex flex-col">
                   <CardHeader>
                     <CardTitle className="line-clamp-1">
                       {study.studyName}
@@ -158,7 +158,7 @@ export default function StudyListPage() {
                   </CardContent>
                   <CardFooter>
                     <Link
-                      href={`/studies/${study.studyId}`}
+                      href={`/studies/${study.id}`}
                       className="w-full"
                     >
                       <Button variant="secondary" className="w-full">

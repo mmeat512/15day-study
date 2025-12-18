@@ -11,8 +11,6 @@ import {
   deleteCommentAction,
 } from "../../actions/submissionActions";
 import { useAuth } from "../../contexts/AuthContext";
-import { getDoc, doc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
 
 interface CommentsSectionProps {
   submissionId: string;
@@ -39,28 +37,8 @@ export function CommentsSection({
     try {
       setLoading(true);
       const commentsData = await getCommentsAction(submissionId);
-
-      // Load user data for each comment
-      const commentsWithUsers = await Promise.all(
-        commentsData.map(async (comment) => {
-          const userDoc = await getDoc(doc(db, "users", comment.userId));
-          return {
-            ...comment,
-            user: userDoc.exists()
-              ? {
-                  uid: comment.userId,
-                  username: userDoc.data().username,
-                  email: userDoc.data().email,
-                  createdAt: userDoc.data().createdAt?.toDate() || new Date(),
-                  photoURL: userDoc.data().photoURL,
-                  lastLoginAt: userDoc.data().lastLoginAt?.toDate(),
-                }
-              : undefined,
-          };
-        })
-      );
-
-      setComments(commentsWithUsers);
+      // Comments now include user data from Drizzle relations
+      setComments(commentsData);
     } catch (error) {
       console.error("Error loading comments:", error);
     } finally {
@@ -93,7 +71,7 @@ export function CommentsSection({
       // Update local state instead of refetching all comments
       setComments((prevComments) =>
         prevComments.map((comment) =>
-          comment.commentId === commentId
+          comment.id === commentId
             ? { ...comment, content: editContent.trim(), updatedAt: new Date() }
             : comment
         )
@@ -115,7 +93,7 @@ export function CommentsSection({
 
       // Remove from local state instead of refetching all comments
       setComments((prevComments) =>
-        prevComments.filter((comment) => comment.commentId !== commentId)
+        prevComments.filter((comment) => comment.id !== commentId)
       );
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -167,10 +145,10 @@ export function CommentsSection({
         <div className="space-y-4">
           {comments.map((comment) => (
             <div
-              key={comment.commentId}
+              key={comment.id}
               className="border-l-4 border-blue-500 dark:border-blue-400 pl-4 py-2"
             >
-              {editingId === comment.commentId ? (
+              {editingId === comment.id ? (
                 // Edit Mode
                 <div>
                   <textarea
@@ -182,7 +160,7 @@ export function CommentsSection({
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => handleEditComment(comment.commentId)}
+                      onClick={() => handleEditComment(comment.id)}
                     >
                       Save
                     </Button>
@@ -215,7 +193,7 @@ export function CommentsSection({
                       <div className="flex gap-1">
                         <button
                           onClick={() => {
-                            setEditingId(comment.commentId);
+                            setEditingId(comment.id);
                             setEditContent(comment.content);
                           }}
                           className="p-1 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
@@ -223,7 +201,7 @@ export function CommentsSection({
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteComment(comment.commentId)}
+                          onClick={() => handleDeleteComment(comment.id)}
                           className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
                         >
                           <Trash2 className="h-4 w-4" />

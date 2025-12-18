@@ -24,7 +24,7 @@ export function StudyOverviewCard({
   totalDays,
   progress,
 }: StudyOverviewProps) {
-  const studyUrl = `/studies/${study.studyId}`;
+  const studyUrl = `/studies/${study.id}`;
 
   return (
     <Card className="h-full">

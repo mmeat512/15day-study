@@ -26,7 +26,7 @@ export function AssignmentSection({
       </h2>
 
       {assignments.map((assignment, index) => (
-        <Card key={assignment.assignmentId}>
+        <Card key={assignment.id}>
           <CardHeader>
             <CardTitle className="text-base font-medium">
               Q{index + 1}. {assignment.questionText}
@@ -38,9 +38,9 @@ export function AssignmentSection({
           <CardContent>
             <Textarea
               placeholder="Write your answer here..."
-              value={answers[assignment.assignmentId] || ""}
+              value={answers[assignment.id] || ""}
               onChange={(e) =>
-                handleChange(assignment.assignmentId, e.target.value)
+                handleChange(assignment.id, e.target.value)
               }
               className="min-h-[120px]"
             />

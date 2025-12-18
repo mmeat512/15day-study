@@ -1,10 +1,10 @@
 import { User } from "./user";
 
 export interface Study {
-  studyId: string;
+  id: string;
   studyName: string;
-  description?: string;
-  bookTitle: string;
+  description: string | null;
+  bookTitle: string | null;
   inviteCode: string;
   startDate: Date;
   endDate: Date;
@@ -16,29 +16,29 @@ export interface Study {
 }
 
 export interface StudyMember {
-  memberId: string;
+  id: string;
   studyId: string;
   userId: string;
-  role: "owner" | "admin" | "member";
+  role: "owner" | "member";
   joinedAt: Date;
   isActive: boolean;
   user?: User; // Joined user data
-  progressRate?: number;
+  progressRate: number;
 }
 
 export interface DayPlan {
-  planId: string;
+  id: string;
   studyId: string;
   dayNumber: number;
   title: string;
-  learningGoal: string;
-  chapterInfo?: string;
-  description?: string;
-  targetDate?: Date;
+  learningGoal: string | null;
+  chapterInfo: string | null;
+  description: string | null;
+  targetDate: Date;
 }
 
 export interface Assignment {
-  assignmentId: string;
+  id: string;
   planId: string;
   questionText: string;
   questionOrder: number;
@@ -46,15 +46,15 @@ export interface Assignment {
 }
 
 export interface Submission {
-  submissionId: string;
+  id: string;
   planId: string;
   studyId: string;
   userId: string;
   dayNumber: number;
-  answers: SubmissionAnswer[];
-  reflection?: string;
+  answers: any; // JSONB type
+  reflection: string | null;
   isCompleted: boolean;
-  submittedAt: Date;
+  submittedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,13 +67,13 @@ export interface SubmissionAnswer {
 }
 
 export interface Comment {
-  commentId: string;
+  id: string;
   submissionId: string;
   studyId: string;
   userId: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
-  isDeleted?: boolean; // Track if comment is deleted
+  isDeleted: boolean;
   user?: User; // Joined user data
 }

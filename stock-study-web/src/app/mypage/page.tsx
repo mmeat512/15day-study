@@ -51,7 +51,7 @@ export default function MyPage() {
 
         for (const studyData of studies) {
           const submissions = await getUserSubmissionsAction(
-            studyData.study.studyId,
+            studyData.study.id,
             user.uid
           );
           const completedSubmissions = submissions.filter((s) => s.isCompleted).length;

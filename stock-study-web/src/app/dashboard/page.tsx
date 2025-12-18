@@ -9,7 +9,6 @@ import { Study, DayPlan } from "../../types/study";
 import {
   getUserStudiesWithProgressAction,
   getDayPlansAction,
-  getCurrentDayNumber,
 } from "../../actions/studyActions";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -53,7 +52,7 @@ export default function DashboardPage() {
           setProgress(Math.min(100, calculatedProgress));
 
           // Get day plans for this study
-          const dayPlans = await getDayPlansAction(primaryStudyData.study.studyId);
+          const dayPlans = await getDayPlansAction(primaryStudyData.study.id);
 
           // Find today's day plan
           const todayPlan = dayPlans.find(
