@@ -2,21 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import ProtectedRoute from "../../../../../components/ProtectedRoute";
 import { DayHeader } from "../../../../../components/study/DayHeader";
 import { AssignmentSection } from "../../../../../components/study/AssignmentSection";
 import { ReflectionSection } from "../../../../../components/study/ReflectionSection";
 import { CommentsSection } from "../../../../../components/study/CommentsSection";
 import { Button } from "../../../../../components/ui/button";
-import { Loader2, Save } from "lucide-react";
-import { DayPlan, Assignment, SubmissionAnswer } from "../../../../../types/study";
+import { Loader2, Save, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { DayPlan, Assignment, SubmissionAnswer, Submission, StudyMember } from "../../../../../types/study";
 import {
   getDayPlansAction,
   getAssignmentsAction,
+  getStudyMembersAction,
 } from "../../../../../actions/studyActions";
 import {
   createSubmissionAction,
   getSubmissionAction,
+  getDaySubmissionsAction,
   updateProgressRateAction,
 } from "../../../../../actions/submissionActions";
 import { useAuth } from "../../../../../contexts/AuthContext";
@@ -33,6 +36,9 @@ export default function DayDetailPage() {
   const [reflection, setReflection] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
+  const [studyMembers, setStudyMembers] = useState<StudyMember[]>([]);
+  const [showAllSubmissions, setShowAllSubmissions] = useState(false);
 
   const studyId = params.studyId as string;
   const dayNumber = parseInt(params.dayNumber as string);
@@ -81,6 +87,14 @@ export default function DayDetailPage() {
           setAnswers(loadedAnswers);
           setReflection(existingSubmission.reflection || "");
         }
+
+        // Load all submissions for this day
+        const daySubmissions = await getDaySubmissionsAction(currentDayPlan.id);
+        setAllSubmissions(daySubmissions);
+
+        // Load study members to display names
+        const members = await getStudyMembersAction(studyId);
+        setStudyMembers(members);
       } catch (error) {
         console.error("Error loading day data:", error);
       } finally {
@@ -132,6 +146,13 @@ export default function DayDetailPage() {
 
       setIsSubmitted(true);
       setSubmissionId(newSubmissionId);
+
+      // Reload all submissions to show updated list
+      if (dayPlan) {
+        const daySubmissions = await getDaySubmissionsAction(dayPlan.id);
+        setAllSubmissions(daySubmissions);
+      }
+
       alert("Assignment submitted successfully! 🎉");
       // Don't redirect to dashboard, stay on page to see comments
       // router.push("/dashboard");
@@ -299,6 +320,127 @@ export default function DayDetailPage() {
               />
             </div>
           )}
+
+          {/* All Submissions Section */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                All Member Submissions ({allSubmissions.length}/{studyMembers.length})
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllSubmissions(!showAllSubmissions)}
+              >
+                {showAllSubmissions ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    View All
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {showAllSubmissions && (
+              <div className="space-y-6 mt-6">
+                {allSubmissions.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No submissions yet for this day.
+                  </p>
+                ) : (
+                  allSubmissions.map((submission) => {
+                    const member = studyMembers.find(m => m.userId === submission.userId);
+                    const submissionAnswers = submission.answers as SubmissionAnswer[];
+
+                    return (
+                      <div
+                        key={submission.id}
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 bg-gray-50 dark:bg-gray-800/50"
+                      >
+                        {/* Member Info */}
+                        <Link
+                          href={`/studies/${studyId}/members/${submission.userId}`}
+                          className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                            {member?.user?.username?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                              {member?.user?.username || 'Anonymous'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Submitted {submission.submittedAt?.toLocaleDateString()} at {submission.submittedAt?.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </Link>
+
+                        {/* Answers */}
+                        <div className="space-y-4">
+                          {submissionAnswers.map((answer, index) => (
+                            <div key={answer.assignmentId}>
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Q{index + 1}. {answer.questionText}
+                              </p>
+                              <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-blue-500 dark:border-blue-400 whitespace-pre-wrap">
+                                {answer.answerText || <span className="italic text-gray-400">No answer provided</span>}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Reflection */}
+                        {submission.reflection && (
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              📝 Daily Reflection
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-green-500 dark:border-green-400 whitespace-pre-wrap">
+                              {submission.reflection}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Members who haven't submitted */}
+                {studyMembers.length > allSubmissions.length && (
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                      Members who haven't submitted yet:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {studyMembers
+                        .filter(member => !allSubmissions.some(sub => sub.userId === member.userId))
+                        .map(member => (
+                          <Link
+                            key={member.id}
+                            href={`/studies/${studyId}/members/${member.userId}`}
+                          >
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+                              <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-semibold">
+                                {member.user?.username?.[0]?.toUpperCase() || '?'}
+                              </div>
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                {member.user?.username || 'Anonymous'}
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </ProtectedRoute>

@@ -353,25 +353,27 @@ export default function StudyDetailPage() {
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {members.map(member => (
-                  <div
+                  <Link
                     key={member.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                    href={`/studies/${studyId}/members/${member.userId}`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                      {member.user?.username?.[0]?.toUpperCase() || '?'}
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                        {member.user?.username?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                          {member.user?.username || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                          {member.role}
+                          {member.progressRate !== undefined && (
+                            <> • {member.progressRate}% complete</>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {member.user?.username || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                        {member.role}
-                        {member.progressRate !== undefined && (
-                          <> • {member.progressRate}% complete</>
-                        )}
-                      </p>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
