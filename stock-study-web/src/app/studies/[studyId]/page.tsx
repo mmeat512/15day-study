@@ -20,6 +20,7 @@ import {
   CheckCircle,
   Circle,
   LogOut,
+  Trash2,
 } from 'lucide-react';
 import { Study, StudyMember, DayPlan } from '../../../types/study';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -29,6 +30,7 @@ import {
   getDayPlansAction,
   getUserStudyMemberAction,
   leaveStudyAction,
+  deleteStudyAction,
 } from '../../../actions/studyActions';
 import { getUserSubmissionsAction } from '../../../actions/submissionActions';
 import Link from 'next/link';
@@ -45,6 +47,7 @@ export default function StudyDetailPage() {
   const [userProgress, setUserProgress] = useState(0);
   const [userMember, setUserMember] = useState<StudyMember | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const studyId = params.studyId as string;
 
@@ -79,7 +82,7 @@ export default function StudyDetailPage() {
         setCompletedDays(completed);
 
         // Get user's progress
-        const memberInfo = await getUserStudyMemberAction(studyId, user.uid);
+        const memberInfo = await getUserStudyMemberAction(user.uid, studyId);
         if (memberInfo) {
           setUserProgress(memberInfo.progressRate || 0);
           setUserMember(memberInfo);
@@ -115,6 +118,39 @@ export default function StudyDetailPage() {
       alert(error.message || 'Failed to leave study. Please try again.');
     } finally {
       setLeaving(false);
+    }
+  }
+
+  async function handleDeleteStudy() {
+    if (!user?.uid || !study) return;
+
+    if (
+      !confirm(
+        `Are you sure you want to DELETE "${study.studyName}"?\n\nThis will permanently delete:\n- All day plans and assignments\n- All member submissions and comments\n- All study data\n\nThis action CANNOT be undone!`,
+      )
+    ) {
+      return;
+    }
+
+    // Double confirmation for critical action
+    if (
+      !confirm(
+        'This is your final warning. Type YES in the next dialog to confirm deletion.',
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await deleteStudyAction(studyId, user.uid);
+      alert('Study has been permanently deleted.');
+      router.push('/studies');
+    } catch (error: any) {
+      console.error('Error deleting study:', error);
+      alert(error.message || 'Failed to delete study. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -168,20 +204,36 @@ export default function StudyDetailPage() {
                 {study.description || 'No description available'}
               </p>
             </div>
-            {userMember && userMember.role !== 'owner' && (
-              <Button
-                variant="destructive"
-                onClick={handleLeaveStudy}
-                disabled={leaving}
-              >
-                {leaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <LogOut className="mr-2 h-4 w-4" />
-                )}
-                Leave Study
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {userMember && userMember.role !== 'owner' && (
+                <Button
+                  variant="destructive"
+                  onClick={handleLeaveStudy}
+                  disabled={leaving}
+                >
+                  {leaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogOut className="mr-2 h-4 w-4" />
+                  )}
+                  Leave Study
+                </Button>
+              )}
+              {userMember && userMember.role === 'owner' && (
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteStudy}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  Delete Study
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Study Info Cards */}

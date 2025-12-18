@@ -251,7 +251,7 @@ export async function joinStudy(
     throw new Error('Invalid invite code');
   }
 
-  // Check if user is already a member
+  // Check if user is already an active member
   const existingMember = await db.query.studyMembers.findFirst({
     where: and(
       eq(studyMembers.studyId, study.id),
@@ -259,20 +259,39 @@ export async function joinStudy(
     ),
   });
 
+  // If user was previously a member but left (isActive = false), reactivate them
   if (existingMember) {
-    throw new Error('You are already a member of this study');
+    if (existingMember.isActive) {
+      throw new Error('You are already a member of this study');
+    }
+
+    // Reactivate the existing membership
+    await db
+      .update(studyMembers)
+      .set({ isActive: true, progressRate: 0 })
+      .where(
+        and(
+          eq(studyMembers.studyId, study.id),
+          eq(studyMembers.userId, userId),
+        ),
+      );
+
+    return study.id;
   }
 
-  // Check if study is full
-  const allMembers = await db.query.studyMembers.findMany({
-    where: eq(studyMembers.studyId, study.id),
+  // Check if study is full (count only active members)
+  const activeMembers = await db.query.studyMembers.findMany({
+    where: and(
+      eq(studyMembers.studyId, study.id),
+      eq(studyMembers.isActive, true),
+    ),
   });
 
-  if (allMembers.length >= study.maxMembers) {
+  if (activeMembers.length >= study.maxMembers) {
     throw new Error('This study has reached its maximum capacity');
   }
 
-  // Add user as member
+  // Add user as new member
   await db.insert(studyMembers).values({
     id: nanoid(),
     studyId: study.id,
@@ -321,6 +340,32 @@ export async function leaveStudy(
     .where(
       and(eq(studyMembers.studyId, studyId), eq(studyMembers.userId, userId)),
     );
+}
+
+/**
+ * Delete a study (owner only)
+ * Cascade deletes all related data: dayPlans, assignments, submissions, comments, studyMembers
+ */
+export async function deleteStudy(
+  studyId: string,
+  userId: string,
+): Promise<void> {
+  // Get the study to check ownership
+  const study = await db.query.studies.findFirst({
+    where: eq(studies.id, studyId),
+  });
+
+  if (!study) {
+    throw new Error('Study not found');
+  }
+
+  // Only owner can delete the study
+  if (study.ownerId !== userId) {
+    throw new Error('Only the study owner can delete this study');
+  }
+
+  // Delete the study - cascade will automatically delete all related data
+  await db.delete(studies).where(eq(studies.id, studyId));
 }
 
 /**

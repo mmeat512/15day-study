@@ -30,6 +30,10 @@ export async function leaveStudyAction(studyId: string, userId: string) {
   return studyService.leaveStudy(studyId, userId);
 }
 
+export async function deleteStudyAction(studyId: string, userId: string) {
+  return studyService.deleteStudy(studyId, userId);
+}
+
 export async function getUserStudiesAction(userId: string): Promise<Study[]> {
   return studyService.getUserStudies(userId);
 }
